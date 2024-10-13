@@ -92,7 +92,7 @@ class PostgreSQLGUI(QMainWindow):
         # Tree Widget
         self.dbTree = QTreeWidget()
         self.dbTree.setHeaderLabels(["Databases and Tables"])
-        self.dbTree.currentItemChanged.connect(self.onTreeItemChanged)
+        self.dbTree.itemSelectionChanged.connect(self.onTreeSelectionChanged)
 
         # Output text area
         self.outputTextEdit = QTextEdit()
@@ -256,6 +256,12 @@ class PostgreSQLGUI(QMainWindow):
         else:
             self.statusBar.showMessage("No item selected")
 
+    def onTreeSelectionChanged(self):
+        selected_items = self.dbTree.selectedItems()
+        if selected_items:
+            current_item = selected_items[0]
+            self.onTreeItemChanged(current_item, None)
+
     def onTreeItemChanged(self, current, previous):
         if current:
             if current.parent() is None:  # Database node
@@ -268,14 +274,10 @@ class PostgreSQLGUI(QMainWindow):
                 parent_item = current.parent()
                 if parent_item:
                     dbname = parent_item.text(0)
-                    table_name = current.text(0).split(" ")[
-                        0
-                    ]  # Remove the (table_type) part
+                    table_name = current.text(0).split(" ")[0]  # Remove the (table_type) part
                     self.showTableContents(dbname, table_name)
                     self.updateTableView(dbname, table_name)
-                    self.statusBar.showMessage(
-                        f"Showing contents of table {table_name}"
-                    )
+                    self.statusBar.showMessage(f"Showing contents of table {table_name}")
 
     def showTableContents(self, dbname, table_name):
         try:
