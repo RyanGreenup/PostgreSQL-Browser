@@ -34,7 +34,6 @@ class DBChooser(QComboBox):
         super().__init__(parent)
         self._check_args(db_manager)
         self.setPlaceholderText("Select a database")
-        self.currentTextChanged.connect(self.on_database_changed)
         self.db_manager = db_manager
         self.status_bar = status_bar
         self.output = output
@@ -44,7 +43,8 @@ class DBChooser(QComboBox):
             self.log(f"Error listing databases: {str(e)}")
 
         if text_changed_callback:
-            self.currentTextChanged.connect(text_changed_callback)
+            for f in text_changed_callback:
+                self.currentTextChanged.connect(f)
 
     def _check_args(self, db_manager):
         if not db_manager:
@@ -70,10 +70,6 @@ class DBChooser(QComboBox):
             self.addItems(databases)
         except Exception as e:
             self.log(f"Error listing databases: {str(e)}")
-
-    def on_database_changed(self, database):
-        if self.parent():
-            self.parent().on_database_selected(database)
 
 
 class MainWindow(QMainWindow):
@@ -154,7 +150,8 @@ class MainWindow(QMainWindow):
             db_manager=self.db_manager,
             on_db_choice_callback=self.update_db_tree_display,
             output=self.output_text_edit,
-            status_bar=self.status_bar
+            status_bar=self.status_bar,
+            on_db_choice_callbacks=[self.on_database_selected]
         )
         right_side.addWidget(self.query_edit)
 
@@ -191,11 +188,11 @@ class MainWindow(QMainWindow):
             self.db_tree.populate(databases, tables_dict)
             self.output_text_edit.append("Databases listed successfully.")
             self.status_bar.showMessage("Databases listed")
-            
+
             # Update the db_chooser
             self.query_edit.db_chooser.clear()
             self.query_edit.db_chooser.addItems(databases)
-            
+
         except Exception as e:
             self.output_text_edit.append(f"Error listing databases: {str(e)}")
             self.status_bar.showMessage("Error listing databases")
@@ -432,7 +429,8 @@ class SQLQuery(QWidget):
         db_manager: DatabaseManager | None = None,
         on_db_choice_callback=None,
         output=None,
-        status_bar = None,
+        status_bar=None,
+        on_db_choice_callbacks=None,
     ):
         self.output = output  # TODO rename as output log
         super().__init__(parent)
@@ -441,12 +439,14 @@ class SQLQuery(QWidget):
         self.query_edit = SQLQueryEditor()
         self.status_bar = status_bar
 
+
+
         # DB Chooser
         self.db_chooser = DBChooser(
             db_manager=self.db_manager,
             output=self.output,
             status_bar=self.status_bar,
-            text_changed_callback=self.update_db_tree_display,
+            text_changed_callback=[self.update_db_tree_display].extend(on_db_choice_callbacks),
         )
         self.db_chooser.populate()  # TODO try removing this
         if on_db_choice_callback:
