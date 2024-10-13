@@ -1,5 +1,6 @@
 import sys
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QStandardItemModel, QStandardItem
 import psycopg2
 import typer
 from typing import Optional
@@ -18,6 +19,7 @@ from PyQt6.QtWidgets import (
     QTreeWidgetItem,
     QMessageBox,
     QInputDialog,
+    QTableView,
 )
 
 app = typer.Typer()
@@ -31,6 +33,7 @@ class PostgreSQLGUI(QWidget):
         self.port = port
         self.username = username
         self.password = password
+        self.tableView = QTableView()
         self.initUI()
         self.autoConnect()
 
@@ -84,13 +87,15 @@ class PostgreSQLGUI(QWidget):
         mainLayout.addWidget(QLabel("Databases and Tables:"))
         main_splitter = QSplitter(Qt.Orientation.Horizontal)
         main_splitter.addWidget(self.dbTree)
-        # TODO Add the preview of the selected table
-        main_splitter.addWidget(
+        # Add the preview of the selected table
+        self.tableView = QTableView()
+        main_splitter.addWidget(self.tableView)
         main_splitter.setSizes([100, 400])
         mainLayout.addWidget(main_splitter)
         mainLayout.addWidget(self.outputTextEdit)
 
         self.setLayout(mainLayout)
+        self.dbTree.itemClicked.connect(self.showDatabaseContents)
 
     def connectToDatabase(
         self, dbname="postgres", host=None, port=None, user=None, password=None
@@ -204,20 +209,21 @@ class PostgreSQLGUI(QWidget):
                 for i in range(selected_item.childCount()):
                     table_item = selected_item.child(i)
                     if table_item:
-                        table_name = table_item.text(0).split(" ")[
-                            0
-                        ]  # Remove the (table_type) part
+                        table_name = table_item.text(0).split(' ')[0]  # Remove the (table_type) part
                         self.showTableContents(dbname, table_name)
+                # Clear the table view when a database is selected
+                self.tableView.setModel(None)
             else:  # Table node
                 parent_item = selected_item.parent()
                 if parent_item:
                     dbname = parent_item.text(0)
-                    table_name = selected_item.text(0).split(" ")[
-                        0
-                    ]  # Remove the (table_type) part
+                    table_name = selected_item.text(0).split(' ')[0]  # Remove the (table_type) part
                     self.showTableContents(dbname, table_name)
+                    self.updateTableView(dbname, table_name)
         else:
             self.outputTextEdit.append("No item selected.")
+            # Clear the table view when nothing is selected
+            self.tableView.setModel(None)
 
     def showTableContents(self, dbname, table_name):
         try:
@@ -250,6 +256,35 @@ class PostgreSQLGUI(QWidget):
 
     def showErrorDialog(self, title, message):
         QMessageBox.critical(self, title, message)
+
+    def updateTableView(self, dbname, table_name):
+        try:
+            if self.connectToDatabase(dbname):
+                if self.conn:
+                    cur = self.conn.cursor()
+                    cur.execute(f"SELECT * FROM {table_name} LIMIT 1000")  # Limit to 1000 rows for performance
+                    rows = cur.fetchall()
+                    
+                    # Get column names
+                    col_names = [desc[0] for desc in cur.description]
+                    
+                    # Create model
+                    model = QStandardItemModel()
+                    model.setHorizontalHeaderLabels(col_names)
+                    
+                    # Populate model with data
+                    for row in rows:
+                        items = [QStandardItem(str(item)) for item in row]
+                        model.appendRow(items)
+                    
+                    # Set model to table view
+                    self.tableView.setModel(model)
+                    self.tableView.setSortingEnabled(True)
+                    self.tableView.resizeColumnsToContents()
+                    
+                    cur.close()
+        except psycopg2.Error as e:
+            self.outputTextEdit.append(f"Error updating table view: {e}")
 
 
 @app.command()
