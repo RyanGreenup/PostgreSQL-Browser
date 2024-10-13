@@ -1,6 +1,10 @@
 import sys
 import psycopg2
+import typer
+from typing import Optional
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QLineEdit, QTextEdit, QListWidget, QMessageBox, QInputDialog
+
+app = typer.Typer()
 
 class PostgreSQLGUI(QWidget):
     def __init__(self):
@@ -166,8 +170,21 @@ class PostgreSQLGUI(QWidget):
         else:
             self.outputTextEdit.append("No database selected.")
 
-if __name__ == "__main__":
+@app.command()
+def main(
+    host: str = typer.Option("localhost", help="Database host"),
+    port: int = typer.Option(5432, help="Database port"),
+    username: str = typer.Option("postgres", help="Database username"),
+    password: Optional[str] = typer.Option(None, help="Database password", prompt=True, hide_input=True)
+):
     app = QApplication(sys.argv)
     gui = PostgreSQLGUI()
+    gui.hostEdit.setText(host)
+    gui.portEdit.setText(str(port))
+    gui.usernameEdit.setText(username)
+    gui.passwordEdit.setText(password)
     gui.show()
     sys.exit(app.exec())
+
+if __name__ == "__main__":
+    app()
