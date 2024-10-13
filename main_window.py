@@ -144,7 +144,7 @@ class MainWindow(QMainWindow):
             self.output_text_edit.clear()
             self.output_text_edit.append(f"Selected database: {database}")
             self.status_bar.showMessage(f"Selected database: {database}")
-            
+
             # Update the tree view to highlight the selected database
             root = self.db_tree.invisibleRootItem()
             for i in range(root.childCount()):
@@ -260,7 +260,7 @@ class MainWindow(QMainWindow):
     def execute_custom_query(self):
         query = self.query_edit.toPlainText()
         selected_database = self.db_chooser.currentText()
-        
+
         if selected_database:
             try:
                 result = self.db_manager.execute_custom_query(selected_database, query)
@@ -324,13 +324,6 @@ QTreeWidget
 
 class DBTreeDisplay(QTreeWidget):
     pass
-
-
-# TODO Implement the following classes
-class DBChooser(QComboBox):
-    """
-    Allow the user to choose a database
-    """
 
 
 

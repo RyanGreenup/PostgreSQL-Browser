@@ -128,7 +128,9 @@ class DatabaseManager:
             print(f"Error fetching table contents: {e}")
             return [], [], False
 
-    def execute_custom_query(self, dbname: str, query: str) -> Union[str, Tuple[List[str], List[Tuple]]]:
+    def execute_custom_query(
+        self, dbname: str, query: str
+    ) -> Union[str, Tuple[List[str], List[Tuple]]]:
         if not self.connect(dbname):
             return "Error: Unable to connect to the database."
 
@@ -141,7 +143,9 @@ class DatabaseManager:
                     self.conn.commit()
                     return columns, rows
                 else:
-                    result = f"Query executed successfully. Rows affected: {cur.rowcount}"
+                    result = (
+                        f"Query executed successfully. Rows affected: {cur.rowcount}"
+                    )
                     self.conn.commit()
                     return result
         except psycopg2.Error as e:
