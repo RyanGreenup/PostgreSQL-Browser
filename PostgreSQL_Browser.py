@@ -87,6 +87,7 @@ class PostgreSQLGUI(QWidget):
                 user=self.usernameEdit.text(),
                 password=self.passwordEdit.text(),
                 dbname=dbname,
+                sslmode='prefer'  # Add this line to make SSL optional
             )
             self.outputTextEdit.append(f"Connected to {dbname} successfully.")
             return True
