@@ -150,6 +150,8 @@ class MainWindow(QMainWindow):
         self.query_edit = SQLQuery(
             db_manager=self.db_manager,
             on_db_choice_callback=self.update_db_tree_display,
+            output=self.output_text_edit,
+            status_bar=self.status_bar
         )
         right_side.addWidget(self.query_edit)
 
@@ -196,7 +198,7 @@ class MainWindow(QMainWindow):
     def update_db_tree_display(self, database):
         if database:
             tables_and_fields = self.db_manager.get_tables_and_fields(database)
-            self.db_tree_display.populate(database, tables_and_fields)
+            self.db_tree.populate(database, tables_and_fields)
 
     def on_database_selected(self, database):
         if database:
@@ -474,7 +476,7 @@ class SQLQuery(QWidget):
     def update_db_tree_display(self, database: str | None):
         if database:
             tables_and_fields = self.db_manager.get_tables_and_fields(database)
-            self.db_tree_display.populate(database, tables_and_fields)
+            self.read_only_tree.populate(database, tables_and_fields)
 
     def execute_custom_query(self, selected_database, query):
         self.db_manager.execute_custom_query(selected_database, query)
