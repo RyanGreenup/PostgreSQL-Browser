@@ -53,13 +53,13 @@ class DBChooser(QComboBox):
     def log(self, message):
         logged = False
         if o := self.output:
-            o.append(f"Error listing databases: {str(e)}")
+            o.append(message)
             logged = True
         if s := self.status_bar:
-            s.showMessage("Error listing databases")
+            s.showMessage(message)
             logged = True
         if not logged:
-            print(f"Error listing databases: {str(e)}", file=sys.stderr)
+            print(message, file=sys.stderr)
 
     def populate(self):
         # connection_info = self.connection_widget.get_connection_info()
