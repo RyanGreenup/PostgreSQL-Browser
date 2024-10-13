@@ -8,22 +8,36 @@ from PyQt6.QtWidgets import (
     QMessageBox,
     QTextEdit,
     QTreeWidget,
+    QComboBox,
 )
 
 from PyQt6.QtCore import Qt, QSettings
 from PyQt6.QtGui import QAction
-from PyQt6.QtCore import Qt
 
 from database_manager import DatabaseManager
 from gui_components import DatabaseTreeWidget, TableView
 from connection_widget import ConnectionWidget
 
 
+class DBChooser(QComboBox):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setPlaceholderText("Select a database")
+        self.currentTextChanged.connect(self.on_database_changed)
+
+    def populate(self, databases):
+        self.clear()
+        self.addItems(databases)
+
+    def on_database_changed(self, database):
+        if self.parent():
+            self.parent().on_database_selected(database)
+
+
 class MainWindow(QMainWindow):
     def __init__(self, host, port, username, password):
         super().__init__()
         self.db_manager = DatabaseManager(host, port, username, password)
-        # TODO Clean up the settings
         self.settings = QSettings("YourCompany", "PostgreSQLBrowser")
         self.initUI()
         self.load_connection_settings()
@@ -102,6 +116,10 @@ class MainWindow(QMainWindow):
 
         parent_layout.addWidget(outer_splitter)
 
+        # Add the DBChooser
+        self.db_chooser = DBChooser(self)
+        parent_layout.addWidget(self.db_chooser)
+
     def setup_status_bar(self):
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
@@ -114,11 +132,26 @@ class MainWindow(QMainWindow):
             databases = self.db_manager.list_databases()
             tables_dict = {db: self.db_manager.list_tables(db) for db in databases}
             self.db_tree.populate(databases, tables_dict)
+            self.db_chooser.populate(databases)  # Populate the DBChooser
             self.output_text_edit.append("Databases listed successfully.")
             self.status_bar.showMessage("Databases listed")
         except Exception as e:
             self.output_text_edit.append(f"Error listing databases: {str(e)}")
             self.status_bar.showMessage("Error listing databases")
+
+    def on_database_selected(self, database):
+        if database:
+            self.output_text_edit.clear()
+            self.output_text_edit.append(f"Selected database: {database}")
+            self.status_bar.showMessage(f"Selected database: {database}")
+            
+            # Update the tree view to highlight the selected database
+            root = self.db_tree.invisibleRootItem()
+            for i in range(root.childCount()):
+                item = root.child(i)
+                if item.text(0) == database:
+                    self.db_tree.setCurrentItem(item)
+                    break
 
     def create_database(self):
         dbname, ok = QInputDialog.getText(
@@ -226,11 +259,11 @@ class MainWindow(QMainWindow):
 
     def execute_custom_query(self):
         query = self.query_edit.toPlainText()
-        selected_item = self.db_tree.currentItem()
-        if selected_item and selected_item.parent() is None:
-            dbname = selected_item.text(0)
+        selected_database = self.db_chooser.currentText()
+        
+        if selected_database:
             try:
-                result = self.db_manager.execute_custom_query(dbname, query)
+                result = self.db_manager.execute_custom_query(selected_database, query)
 
                 # Check if the result is a tuple (indicating a SELECT query)
                 if isinstance(result, tuple) and len(result) == 2:
@@ -263,9 +296,7 @@ class MainWindow(QMainWindow):
                 self.table_view.setModel(None)  # Clear the table view
         else:
             self.output_text_edit.clear()
-            self.output_text_edit.append(
-                "Please select a database before executing a query."
-            )
+            self.output_text_edit.append("Please select a database before executing a query.")
             self.status_bar.showMessage("No database selected")
             self.table_view.setModel(None)  # Clear the table view
 
