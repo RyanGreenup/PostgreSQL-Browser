@@ -320,15 +320,12 @@ class MainWindow(QMainWindow):
         self.status_bar.showMessage("Database list refreshed")
 
     def execute_custom_query(self):
-        self.query_edit.get_query_text()
-        # query = self.query_edit.toPlainText()
-        self.query_edit.get_database()
-        # selected_database = self.db_chooser.currentText()
+        query = self.query_edit.get_query_text()
+        selected_database = self.query_edit.get_database()
 
         if selected_database:
             try:
-                self.query_edit.execute_custom_query(selected_database, query)
-                # result = self.db_manager.execute_custom_query(selected_database, query)
+                result = self.db_manager.execute_custom_query(selected_database, query)
 
                 # Check if the result is a tuple (indicating a SELECT query)
                 if isinstance(result, tuple) and len(result) == 2:
