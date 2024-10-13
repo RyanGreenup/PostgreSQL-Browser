@@ -84,7 +84,9 @@ class PostgreSQLGUI(QWidget):
 
         self.setLayout(mainLayout)
 
-    def connectToDatabase(self, dbname="postgres", host=None, port=None, user=None, password=None):
+    def connectToDatabase(
+        self, dbname="postgres", host=None, port=None, user=None, password=None
+    ):
         try:
             if self.conn:
                 self.conn.close()
@@ -94,7 +96,7 @@ class PostgreSQLGUI(QWidget):
                 user=user or self.usernameEdit.text(),
                 password=password or self.passwordEdit.text(),
                 dbname=dbname,
-                sslmode='prefer'
+                sslmode="prefer",
             )
             self.outputTextEdit.append(f"Connected to {dbname} successfully.")
             return True
@@ -118,18 +120,22 @@ class PostgreSQLGUI(QWidget):
     def listTables(self, dbname, parent_item):
         if self.connectToDatabase(dbname):
             cur = self.conn.cursor()
-            cur.execute("""
+            cur.execute(
+                """
                 SELECT table_name, table_type 
                 FROM information_schema.tables 
                 WHERE table_schema='public'
-            """)
+            """
+            )
             tables = cur.fetchall()
             for table, table_type in tables:
                 table_item = QTreeWidgetItem(parent_item, [f"{table} ({table_type})"])
             cur.close()
 
     def createDatabase(self):
-        dbname, ok = QInputDialog.getText(self, "Create Database", "Enter database name:")
+        dbname, ok = QInputDialog.getText(
+            self, "Create Database", "Enter database name:"
+        )
         if ok and dbname:
             try:
                 if self.connectToDatabase():
@@ -137,19 +143,26 @@ class PostgreSQLGUI(QWidget):
                     cur = self.conn.cursor()
                     cur.execute(f'CREATE DATABASE "{dbname}"')
                     cur.close()
-                    self.outputTextEdit.append(f"Database {dbname} created successfully.")
+                    self.outputTextEdit.append(
+                        f"Database {dbname} created successfully."
+                    )
                     self.listDatabases()  # Refresh the database tree
             except psycopg2.Error as e:
                 self.outputTextEdit.append(f"Error creating database: {e}")
 
     def deleteDatabase(self):
         selected_item = self.dbTree.currentItem()
-        if selected_item and selected_item.parent() is None:  # Check if it's a top-level item (database)
+        if (
+            selected_item and selected_item.parent() is None
+        ):  # Check if it's a top-level item (database)
             dbname = selected_item.text(0)
-            reply = QMessageBox.question(self, "Delete Database",
-                                         f"Are you sure you want to delete database '{dbname}'?",
-                                         QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                                         QMessageBox.StandardButton.No)
+            reply = QMessageBox.question(
+                self,
+                "Delete Database",
+                f"Are you sure you want to delete database '{dbname}'?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,
+            )
             if reply == QMessageBox.StandardButton.Yes:
                 try:
                     if self.connectToDatabase():
@@ -157,12 +170,16 @@ class PostgreSQLGUI(QWidget):
                         cur = self.conn.cursor()
                         cur.execute(f'DROP DATABASE IF EXISTS "{dbname}"')
                         cur.close()
-                        self.outputTextEdit.append(f"Database {dbname} deleted successfully.")
+                        self.outputTextEdit.append(
+                            f"Database {dbname} deleted successfully."
+                        )
                         self.listDatabases()  # Refresh the database tree
                 except psycopg2.Error as e:
                     self.outputTextEdit.append(f"Error deleting database: {e}")
             else:
-                self.outputTextEdit.append(f"Deletion of database '{dbname}' cancelled.")
+                self.outputTextEdit.append(
+                    f"Deletion of database '{dbname}' cancelled."
+                )
         else:
             self.outputTextEdit.append("No database selected.")
 
@@ -174,11 +191,15 @@ class PostgreSQLGUI(QWidget):
                 self.outputTextEdit.append(f"Contents of database {dbname}:")
                 for i in range(selected_item.childCount()):
                     table_item = selected_item.child(i)
-                    table_name = table_item.text(0).split(' ')[0]  # Remove the (table_type) part
+                    table_name = table_item.text(0).split(" ")[
+                        0
+                    ]  # Remove the (table_type) part
                     self.showTableContents(dbname, table_name)
             else:  # Table node
                 dbname = selected_item.parent().text(0)
-                table_name = selected_item.text(0).split(' ')[0]  # Remove the (table_type) part
+                table_name = selected_item.text(0).split(" ")[
+                    0
+                ]  # Remove the (table_type) part
                 self.showTableContents(dbname, table_name)
         else:
             self.outputTextEdit.append("No item selected.")
@@ -187,9 +208,13 @@ class PostgreSQLGUI(QWidget):
         try:
             if self.connectToDatabase(dbname):
                 cur = self.conn.cursor()
-                cur.execute(f"SELECT * FROM {table_name} LIMIT 5")  # Limit to 5 rows for brevity
+                cur.execute(
+                    f"SELECT * FROM {table_name} LIMIT 5"
+                )  # Limit to 5 rows for brevity
                 rows = cur.fetchall()
-                self.outputTextEdit.append(f"  Contents of {table_name} (first 5 rows):")
+                self.outputTextEdit.append(
+                    f"  Contents of {table_name} (first 5 rows):"
+                )
                 for row in rows:
                     self.outputTextEdit.append(f"    - {row}")
                 cur.close()
@@ -198,14 +223,14 @@ class PostgreSQLGUI(QWidget):
 
     def autoConnect(self):
         if self.connectToDatabase(
-            host=self.host,
-            port=self.port,
-            user=self.username,
-            password=self.password
+            host=self.host, port=self.port, user=self.username, password=self.password
         ):
             self.listDatabases()
         else:
-            self.showErrorDialog("Connection Failed", "Failed to connect to the database. Please check your connection settings.")
+            self.showErrorDialog(
+                "Connection Failed",
+                "Failed to connect to the database. Please check your connection settings.",
+            )
 
     def showErrorDialog(self, title, message):
         QMessageBox.critical(self, title, message)
@@ -217,7 +242,8 @@ def main(
     port: int = typer.Option(5432, help="Database port"),
     username: str = typer.Option("postgres", help="Database username"),
     password: Optional[str] = typer.Option(
-        None, help="Database password", prompt=False),
+        None, help="Database password", prompt=False
+    ),
 ):
     app = QApplication(sys.argv)
     gui = PostgreSQLGUI(host, port, username, password)
