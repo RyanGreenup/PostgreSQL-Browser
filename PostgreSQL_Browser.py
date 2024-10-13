@@ -2,9 +2,22 @@ import sys
 import psycopg2
 import typer
 from typing import Optional
-from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QLineEdit, QTextEdit, QListWidget, QMessageBox, QInputDialog
+from PyQt6.QtWidgets import (
+    QApplication,
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QPushButton,
+    QLabel,
+    QLineEdit,
+    QTextEdit,
+    QListWidget,
+    QMessageBox,
+    QInputDialog,
+)
 
 app = typer.Typer()
+
 
 class PostgreSQLGUI(QWidget):
     def __init__(self):
@@ -64,7 +77,7 @@ class PostgreSQLGUI(QWidget):
 
         self.setLayout(mainLayout)
 
-    def connectToDatabase(self, dbname='postgres'):
+    def connectToDatabase(self, dbname="postgres"):
         try:
             if self.conn:
                 self.conn.close()
@@ -73,7 +86,7 @@ class PostgreSQLGUI(QWidget):
                 port=int(self.portEdit.text()),
                 user=self.usernameEdit.text(),
                 password=self.passwordEdit.text(),
-                dbname=dbname
+                dbname=dbname,
             )
             self.outputTextEdit.append(f"Connected to {dbname} successfully.")
             return True
@@ -93,7 +106,9 @@ class PostgreSQLGUI(QWidget):
             cur.close()
 
     def createDatabase(self):
-        dbname, ok = QInputDialog.getText(self, 'Create Database', 'Enter database name:')
+        dbname, ok = QInputDialog.getText(
+            self, "Create Database", "Enter database name:"
+        )
         if ok and dbname:
             try:
                 # Ensure we are connected to the default database to create a new one
@@ -102,14 +117,16 @@ class PostgreSQLGUI(QWidget):
                     self.conn.autocommit = True
 
                     cur = self.conn.cursor()
-                    cur.execute(f"CREATE DATABASE \"{dbname}\"")
+                    cur.execute(f'CREATE DATABASE "{dbname}"')
                     cur.close()
 
                     # Optionally, you can turn autocommit off after creating the database
                     # if you plan to execute other commands that should be run in a transaction.
                     # self.conn.autocommit = False
 
-                    self.outputTextEdit.append(f"Database {dbname} created successfully.")
+                    self.outputTextEdit.append(
+                        f"Database {dbname} created successfully."
+                    )
                     self.listDatabases()  # Refresh the database list
             except psycopg2.Error as e:
                 self.outputTextEdit.append(f"Error creating database: {e}")
@@ -118,9 +135,13 @@ class PostgreSQLGUI(QWidget):
         selected_db = self.dbList.currentItem()
         if selected_db:
             dbname = selected_db.text()
-            reply = QMessageBox.question(self, 'Delete Database', f"Are you sure you want to delete database '{dbname}'?",
-                             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                             QMessageBox.StandardButton.No)
+            reply = QMessageBox.question(
+                self,
+                "Delete Database",
+                f"Are you sure you want to delete database '{dbname}'?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,
+            )
             if reply == QMessageBox.StandardButton.Yes:
                 try:
                     # Ensure we are connected to the default database to delete another one
@@ -129,16 +150,22 @@ class PostgreSQLGUI(QWidget):
                         self.conn.autocommit = True
 
                         cur = self.conn.cursor()
-                        cur.execute(f"DROP DATABASE IF EXISTS \"{dbname}\"")
+                        cur.execute(f'DROP DATABASE IF EXISTS "{dbname}"')
                         cur.close()
 
-                        self.outputTextEdit.append(f"Database {dbname} deleted successfully.")
+                        self.outputTextEdit.append(
+                            f"Database {dbname} deleted successfully."
+                        )
                         self.listDatabases()  # Refresh the database list
-                        self.dbList.takeItem(self.dbList.row(selected_db))  # Remove the item from the list
+                        self.dbList.takeItem(
+                            self.dbList.row(selected_db)
+                        )  # Remove the item from the list
                 except psycopg2.Error as e:
                     self.outputTextEdit.append(f"Error deleting database: {e}")
             else:
-                self.outputTextEdit.append(f"Deletion of database '{dbname}' cancelled.")
+                self.outputTextEdit.append(
+                    f"Deletion of database '{dbname}' cancelled."
+                )
         else:
             self.outputTextEdit.append("No database selected.")
 
@@ -149,12 +176,16 @@ class PostgreSQLGUI(QWidget):
             try:
                 if self.connectToDatabase(dbname):
                     cur = self.conn.cursor()
-                    cur.execute("SELECT table_name FROM information_schema.tables WHERE table_schema='public'")
+                    cur.execute(
+                        "SELECT table_name FROM information_schema.tables WHERE table_schema='public'"
+                    )
                     tables = cur.fetchall()
                     self.outputTextEdit.append(f"Tables in database {dbname}:")
                     for table in tables:
                         self.outputTextEdit.append(f"- {table[0]}")
-                        cur.execute(f"SELECT column_name FROM information_schema.columns WHERE table_name = '{table[0]}'")
+                        cur.execute(
+                            f"SELECT column_name FROM information_schema.columns WHERE table_name = '{table[0]}'"
+                        )
                         columns = cur.fetchall()
                         self.outputTextEdit.append(f"  Columns:")
                         for column in columns:
@@ -170,12 +201,14 @@ class PostgreSQLGUI(QWidget):
         else:
             self.outputTextEdit.append("No database selected.")
 
+
 @app.command()
 def main(
     host: str = typer.Option("localhost", help="Database host"),
     port: int = typer.Option(5432, help="Database port"),
     username: str = typer.Option("postgres", help="Database username"),
-    password: Optional[str] = typer.Option(None, help="Database password", prompt=True, hide_input=True)
+    password: Optional[str] = typer.Option(
+        None, help="Database password", prompt=False),
 ):
     app = QApplication(sys.argv)
     gui = PostgreSQLGUI()
@@ -185,6 +218,7 @@ def main(
     gui.passwordEdit.setText(password)
     gui.show()
     sys.exit(app.exec())
+
 
 if __name__ == "__main__":
     app()
