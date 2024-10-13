@@ -191,6 +191,11 @@ class MainWindow(QMainWindow):
             self.db_tree.populate(databases, tables_dict)
             self.output_text_edit.append("Databases listed successfully.")
             self.status_bar.showMessage("Databases listed")
+            
+            # Update the db_chooser
+            self.query_edit.db_chooser.clear()
+            self.query_edit.db_chooser.addItems(databases)
+            
         except Exception as e:
             self.output_text_edit.append(f"Error listing databases: {str(e)}")
             self.status_bar.showMessage("Error listing databases")
