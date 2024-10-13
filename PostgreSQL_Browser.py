@@ -258,14 +258,8 @@ class PostgreSQLGUI(QMainWindow):
                 dbname = current.text(0)
                 self.outputTextEdit.clear()
                 self.outputTextEdit.append(f"Contents of database {dbname}:")
-                for i in range(current.childCount()):
-                    table_item = current.child(i)
-                    if table_item:
-                        table_name = table_item.text(0).split(" ")[0]  # Remove the (table_type) part
-                        self.showTableContents(dbname, table_name)
-                # Clear the table view when a database is selected
-                self.tableView.setModel(None)
-                self.statusBar.showMessage(f"Showing contents of database {dbname}")
+                self.tableView.setModel(None)  # Clear the table view
+                self.statusBar.showMessage(f"Selected database: {dbname}")
             else:  # Table node
                 parent_item = current.parent()
                 if parent_item:
@@ -284,11 +278,12 @@ class PostgreSQLGUI(QMainWindow):
                         f'SELECT * FROM "{table_name}" LIMIT 5'
                     )  # Use quoted identifier
                     rows = cur.fetchall()
+                    self.outputTextEdit.clear()
                     self.outputTextEdit.append(
-                        f"  Contents of {table_name} (first 5 rows):"
+                        f"Contents of {table_name} (first 5 rows):"
                     )
                     for row in rows:
-                        self.outputTextEdit.append(f"    - {row}")
+                        self.outputTextEdit.append(f"  - {row}")
                     cur.close()
         except psycopg2.Error as e:
             self.outputTextEdit.append(f"Error showing table contents: {e}")
@@ -341,6 +336,7 @@ class PostgreSQLGUI(QMainWindow):
         except psycopg2.Error as e:
             self.outputTextEdit.append(f"Error updating table view: {e}")
             self.statusBar.showMessage(f"Error updating table view: {table_name}")
+            self.tableView.setModel(None)  # Clear the table view on error
 
 
 @app.command()
