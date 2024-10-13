@@ -85,14 +85,19 @@ class PostgreSQLGUI(QWidget):
         mainLayout.addWidget(self.deleteDbButton)
         mainLayout.addWidget(self.showDbButton)
         mainLayout.addWidget(QLabel("Databases and Tables:"))
+
+        outer_splitter = QSplitter(Qt.Orientation.Vertical)
+
         main_splitter = QSplitter(Qt.Orientation.Horizontal)
         main_splitter.addWidget(self.dbTree)
         # Add the preview of the selected table
         self.tableView = QTableView()
         main_splitter.addWidget(self.tableView)
         main_splitter.setSizes([100, 400])
-        mainLayout.addWidget(main_splitter)
-        mainLayout.addWidget(self.outputTextEdit)
+        outer_splitter.addWidget(main_splitter)
+        outer_splitter.addWidget(self.outputTextEdit)
+        outer_splitter.setSizes([200, 100])
+        mainLayout.addWidget(outer_splitter)
 
         self.setLayout(mainLayout)
         self.dbTree.itemClicked.connect(self.showDatabaseContents)
@@ -123,7 +128,9 @@ class PostgreSQLGUI(QWidget):
             self.outputTextEdit.append("Listing databases...")
             if self.conn:
                 cur = self.conn.cursor()
-                cur.execute("SELECT datname FROM pg_database WHERE datistemplate = false")
+                cur.execute(
+                    "SELECT datname FROM pg_database WHERE datistemplate = false"
+                )
                 databases = cur.fetchall()
                 self.dbTree.clear()
                 for db in databases:
@@ -144,7 +151,9 @@ class PostgreSQLGUI(QWidget):
                 )
                 tables = cur.fetchall()
                 for table, table_type in tables:
-                    table_item = QTreeWidgetItem(parent_item, [f"{table} ({table_type})"])
+                    table_item = QTreeWidgetItem(
+                        parent_item, [f"{table} ({table_type})"]
+                    )
                 cur.close()
 
     def createDatabase(self):
@@ -209,7 +218,9 @@ class PostgreSQLGUI(QWidget):
                 for i in range(selected_item.childCount()):
                     table_item = selected_item.child(i)
                     if table_item:
-                        table_name = table_item.text(0).split(' ')[0]  # Remove the (table_type) part
+                        table_name = table_item.text(0).split(" ")[
+                            0
+                        ]  # Remove the (table_type) part
                         self.showTableContents(dbname, table_name)
                 # Clear the table view when a database is selected
                 self.tableView.setModel(None)
@@ -217,7 +228,9 @@ class PostgreSQLGUI(QWidget):
                 parent_item = selected_item.parent()
                 if parent_item:
                     dbname = parent_item.text(0)
-                    table_name = selected_item.text(0).split(' ')[0]  # Remove the (table_type) part
+                    table_name = selected_item.text(0).split(" ")[
+                        0
+                    ]  # Remove the (table_type) part
                     self.showTableContents(dbname, table_name)
                     self.updateTableView(dbname, table_name)
         else:
@@ -262,26 +275,28 @@ class PostgreSQLGUI(QWidget):
             if self.connectToDatabase(dbname):
                 if self.conn:
                     cur = self.conn.cursor()
-                    cur.execute(f"SELECT * FROM {table_name} LIMIT 1000")  # Limit to 1000 rows for performance
+                    cur.execute(
+                        f"SELECT * FROM {table_name} LIMIT 1000"
+                    )  # Limit to 1000 rows for performance
                     rows = cur.fetchall()
-                    
+
                     # Get column names
                     col_names = [desc[0] for desc in cur.description]
-                    
+
                     # Create model
                     model = QStandardItemModel()
                     model.setHorizontalHeaderLabels(col_names)
-                    
+
                     # Populate model with data
                     for row in rows:
                         items = [QStandardItem(str(item)) for item in row]
                         model.appendRow(items)
-                    
+
                     # Set model to table view
                     self.tableView.setModel(model)
                     self.tableView.setSortingEnabled(True)
                     self.tableView.resizeColumnsToContents()
-                    
+
                     cur.close()
         except psycopg2.Error as e:
             self.outputTextEdit.append(f"Error updating table view: {e}")
