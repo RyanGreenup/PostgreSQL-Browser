@@ -196,19 +196,20 @@ class PostgreSQLGUI(QMainWindow):
                     self.show_table_contents(dbname, table_name)
 
     def show_table_contents(self, dbname, table_name):
-        col_names, rows = self.db_manager.get_table_contents(dbname, table_name)
-        if col_names and rows:
+        col_names, rows, success = self.db_manager.get_table_contents(dbname, table_name)
+        if success:
             self.table_view.update_content(col_names, rows)
             self.output_text_edit.clear()
-            self.output_text_edit.append(f"Contents of {table_name} (first 5 rows):")
-            for row in rows[:5]:
-                self.output_text_edit.append(f"  - {row}")
+            if rows:
+                self.output_text_edit.append(f"Contents of {table_name} (first 5 rows):")
+                for row in rows[:5]:
+                    self.output_text_edit.append(f"  - {row}")
+            else:
+                self.output_text_edit.append(f"Table {table_name} is empty.")
             self.status_bar.showMessage(f"Showing contents of table {table_name}")
         else:
-            self.output_text_edit.append(
-                f"Error fetching contents of table {table_name}"
-            )
-            self.status_bar.showMessage(f"Error showing table contents: {table_name}")
+            self.output_text_edit.append(f"Error: Table {table_name} does not exist.")
+            self.status_bar.showMessage(f"Error: Table {table_name} not found")
             self.table_view.setModel(None)
 
     def refresh_databases(self):
