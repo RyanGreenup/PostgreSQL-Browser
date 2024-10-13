@@ -20,9 +20,13 @@ app = typer.Typer()
 
 
 class PostgreSQLGUI(QWidget):
-    def __init__(self):
+    def __init__(self, host, port, username, password):
         super().__init__()
         self.conn = None
+        self.host = host
+        self.port = port
+        self.username = username
+        self.password = password
         self.initUI()
         self.autoConnect()
 
@@ -34,10 +38,10 @@ class PostgreSQLGUI(QWidget):
 
         # Connection settings
         connectionLayout = QHBoxLayout()
-        self.hostEdit = QLineEdit("localhost")
-        self.portEdit = QLineEdit("5432")
-        self.usernameEdit = QLineEdit("postgres")
-        self.passwordEdit = QLineEdit()
+        self.hostEdit = QLineEdit(self.host)
+        self.portEdit = QLineEdit(str(self.port))
+        self.usernameEdit = QLineEdit(self.username)
+        self.passwordEdit = QLineEdit(self.password if self.password else "")
         self.passwordEdit.setEchoMode(QLineEdit.EchoMode.Password)
 
         connectionLayout.addWidget(QLabel("Host:"))
@@ -78,17 +82,17 @@ class PostgreSQLGUI(QWidget):
 
         self.setLayout(mainLayout)
 
-    def connectToDatabase(self, dbname="postgres"):
+    def connectToDatabase(self, dbname="postgres", host=None, port=None, user=None, password=None):
         try:
             if self.conn:
                 self.conn.close()
             self.conn = psycopg2.connect(
-                host=self.hostEdit.text(),
-                port=int(self.portEdit.text()),
-                user=self.usernameEdit.text(),
-                password=self.passwordEdit.text(),
+                host=host or self.hostEdit.text(),
+                port=int(port or self.portEdit.text()),
+                user=user or self.usernameEdit.text(),
+                password=password or self.passwordEdit.text(),
                 dbname=dbname,
-                sslmode='prefer'  # Add this line to make SSL optional
+                sslmode='prefer'
             )
             self.outputTextEdit.append(f"Connected to {dbname} successfully.")
             return True
@@ -205,7 +209,12 @@ class PostgreSQLGUI(QWidget):
             self.outputTextEdit.append("No database selected.")
 
     def autoConnect(self):
-        if self.connectToDatabase():
+        if self.connectToDatabase(
+            host=self.host,
+            port=self.port,
+            user=self.username,
+            password=self.password
+        ):
             self.listDatabases()
         else:
             self.showErrorDialog("Connection Failed", "Failed to connect to the database. Please check your connection settings.")
@@ -223,11 +232,7 @@ def main(
         None, help="Database password", prompt=False),
 ):
     app = QApplication(sys.argv)
-    gui = PostgreSQLGUI()
-    gui.hostEdit.setText(host)
-    gui.portEdit.setText(str(port))
-    gui.usernameEdit.setText(username)
-    gui.passwordEdit.setText(password)
+    gui = PostgreSQLGUI(host, port, username, password)
     gui.show()
     sys.exit(app.exec())
 
