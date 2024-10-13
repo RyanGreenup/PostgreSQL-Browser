@@ -2,6 +2,7 @@ import psycopg2
 from psycopg2.extensions import connection as PsycopgConnection
 from typing import Optional, List, Tuple
 
+
 class DatabaseManager:
     def __init__(self, host: str, port: int, username: str, password: str):
         self.host = host
@@ -30,7 +31,7 @@ class DatabaseManager:
     def list_databases(self) -> List[str]:
         if not self.connect():
             return []
-        
+
         with self.conn.cursor() as cur:
             cur.execute("SELECT datname FROM pg_database WHERE datistemplate = false")
             return [db[0] for db in cur.fetchall()]
@@ -38,19 +39,21 @@ class DatabaseManager:
     def list_tables(self, dbname: str) -> List[Tuple[str, str]]:
         if not self.connect(dbname):
             return []
-        
+
         with self.conn.cursor() as cur:
-            cur.execute("""
+            cur.execute(
+                """
                 SELECT table_name, table_type
                 FROM information_schema.tables
                 WHERE table_schema='public'
-            """)
+            """
+            )
             return cur.fetchall()
 
     def create_database(self, dbname: str) -> bool:
         if not self.connect():
             return False
-        
+
         try:
             self.conn.autocommit = True
             with self.conn.cursor() as cur:
@@ -63,7 +66,7 @@ class DatabaseManager:
     def delete_database(self, dbname: str) -> bool:
         if not self.connect():
             return False
-        
+
         try:
             self.conn.autocommit = True
             with self.conn.cursor() as cur:
@@ -73,10 +76,12 @@ class DatabaseManager:
             print(f"Error deleting database: {e}")
             return False
 
-    def get_table_contents(self, dbname: str, table_name: str, limit: int = 1000) -> Tuple[List[str], List[Tuple]]:
+    def get_table_contents(
+        self, dbname: str, table_name: str, limit: int = 1000
+    ) -> Tuple[List[str], List[Tuple]]:
         if not self.connect(dbname):
             return [], []
-        
+
         try:
             with self.conn.cursor() as cur:
                 cur.execute(f'SELECT * FROM "{table_name}" LIMIT {limit}')

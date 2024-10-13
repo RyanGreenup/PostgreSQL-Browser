@@ -1,8 +1,19 @@
 import sys
 from PyQt6.QtWidgets import (
-    QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QLabel,
-    QLineEdit, QTextEdit, QWidget, QMenuBar, QMenu, QStatusBar,
-    QSplitter, QInputDialog, QMessageBox
+    QApplication,
+    QMainWindow,
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QTextEdit,
+    QWidget,
+    QMenuBar,
+    QMenu,
+    QStatusBar,
+    QSplitter,
+    QInputDialog,
+    QMessageBox,
 )
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QAction
@@ -13,6 +24,7 @@ from database_manager import DatabaseManager
 from gui_components import DatabaseTreeWidget, TableView
 
 app = typer.Typer()
+
 
 class PostgreSQLGUI(QMainWindow):
     def __init__(self, host, port, username, password):
@@ -44,7 +56,7 @@ class PostgreSQLGUI(QMainWindow):
             ("Refresh", self.refresh_databases),
             ("Create New Database", self.create_database),
             ("Delete Database", self.delete_database),
-            ("Show Database Contents", self.show_database_contents)
+            ("Show Database Contents", self.show_database_contents),
         ]
 
         for action_text, action_slot in actions:
@@ -64,7 +76,7 @@ class PostgreSQLGUI(QMainWindow):
             ("Host:", self.host_edit),
             ("Port:", self.port_edit),
             ("Username:", self.username_edit),
-            ("Password:", self.password_edit)
+            ("Password:", self.password_edit),
         ]:
             connection_layout.addWidget(QLabel(label))
             connection_layout.addWidget(widget)
@@ -107,7 +119,9 @@ class PostgreSQLGUI(QMainWindow):
         self.status_bar.showMessage("Databases listed")
 
     def create_database(self):
-        dbname, ok = QInputDialog.getText(self, "Create Database", "Enter database name:")
+        dbname, ok = QInputDialog.getText(
+            self, "Create Database", "Enter database name:"
+        )
         if ok and dbname:
             if self.db_manager.create_database(dbname):
                 self.output_text_edit.append(f"Database {dbname} created successfully.")
@@ -121,20 +135,29 @@ class PostgreSQLGUI(QMainWindow):
         selected_item = self.db_tree.currentItem()
         if selected_item and selected_item.parent() is None:
             dbname = selected_item.text(0)
-            reply = QMessageBox.question(self, "Delete Database",
-                                         f"Are you sure you want to delete database '{dbname}'?",
-                                         QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                                         QMessageBox.StandardButton.No)
+            reply = QMessageBox.question(
+                self,
+                "Delete Database",
+                f"Are you sure you want to delete database '{dbname}'?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,
+            )
             if reply == QMessageBox.StandardButton.Yes:
                 if self.db_manager.delete_database(dbname):
-                    self.output_text_edit.append(f"Database {dbname} deleted successfully.")
+                    self.output_text_edit.append(
+                        f"Database {dbname} deleted successfully."
+                    )
                     self.list_databases()
-                    self.status_bar.showMessage(f"Database {dbname} deleted successfully")
+                    self.status_bar.showMessage(
+                        f"Database {dbname} deleted successfully"
+                    )
                 else:
                     self.output_text_edit.append(f"Error deleting database {dbname}.")
                     self.status_bar.showMessage("Error deleting database")
             else:
-                self.output_text_edit.append(f"Deletion of database '{dbname}' cancelled.")
+                self.output_text_edit.append(
+                    f"Deletion of database '{dbname}' cancelled."
+                )
                 self.status_bar.showMessage("Database deletion cancelled")
         else:
             self.output_text_edit.append("No database selected.")
@@ -182,7 +205,9 @@ class PostgreSQLGUI(QMainWindow):
                 self.output_text_edit.append(f"  - {row}")
             self.status_bar.showMessage(f"Showing contents of table {table_name}")
         else:
-            self.output_text_edit.append(f"Error fetching contents of table {table_name}")
+            self.output_text_edit.append(
+                f"Error fetching contents of table {table_name}"
+            )
             self.status_bar.showMessage(f"Error showing table contents: {table_name}")
             self.table_view.setModel(None)
 
@@ -192,17 +217,21 @@ class PostgreSQLGUI(QMainWindow):
         self.output_text_edit.append("Database list refreshed.")
         self.status_bar.showMessage("Database list refreshed")
 
+
 @app.command()
 def main(
     host: str = typer.Option("localhost", help="Database host"),
     port: int = typer.Option(5432, help="Database port"),
     username: str = typer.Option("postgres", help="Database username"),
-    password: Optional[str] = typer.Option(None, help="Database password", prompt=True, hide_input=True),
+    password: Optional[str] = typer.Option(
+        None, help="Database password", prompt=True, hide_input=True
+    ),
 ):
     app = QApplication(sys.argv)
     gui = PostgreSQLGUI(host, port, username, password)
     gui.show()
     sys.exit(app.exec())
+
 
 if __name__ == "__main__":
     app()

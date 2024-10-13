@@ -1,6 +1,7 @@
 from PyQt6.QtWidgets import QTreeWidget, QTreeWidgetItem, QTableView
 from PyQt6.QtGui import QStandardItemModel, QStandardItem
 
+
 class DatabaseTreeWidget(QTreeWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -12,6 +13,7 @@ class DatabaseTreeWidget(QTreeWidget):
             db_item = QTreeWidgetItem(self, [db])
             for table, table_type in tables_dict.get(db, []):
                 QTreeWidgetItem(db_item, [f"{table} ({table_type})"])
+
 
 class TableView(QTableView):
     def __init__(self, parent=None):
