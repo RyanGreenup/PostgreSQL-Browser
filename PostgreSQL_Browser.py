@@ -196,12 +196,16 @@ class PostgreSQLGUI(QMainWindow):
                     self.show_table_contents(dbname, table_name)
 
     def show_table_contents(self, dbname, table_name):
-        col_names, rows, success = self.db_manager.get_table_contents(dbname, table_name)
+        col_names, rows, success = self.db_manager.get_table_contents(
+            dbname, table_name
+        )
         if success:
             self.table_view.update_content(col_names, rows)
             self.output_text_edit.clear()
             if rows:
-                self.output_text_edit.append(f"Contents of {table_name} (first 5 rows):")
+                self.output_text_edit.append(
+                    f"Contents of {table_name} (first 5 rows):"
+                )
                 for row in rows[:5]:
                     self.output_text_edit.append(f"  - {row}")
             else:

@@ -85,31 +85,37 @@ class DatabaseManager:
         try:
             with self.conn.cursor() as cur:
                 # First, check if the table exists
-                cur.execute("""
+                cur.execute(
+                    """
                     SELECT EXISTS (
                         SELECT FROM information_schema.tables 
                         WHERE table_schema = 'public' 
                         AND table_name = %s
                     )
-                """, (table_name,))
+                """,
+                    (table_name,),
+                )
                 table_exists = cur.fetchone()[0]
-                
+
                 if not table_exists:
                     return [], [], False
 
                 # Get column names
-                cur.execute(f"""
+                cur.execute(
+                    f"""
                     SELECT column_name 
                     FROM information_schema.columns 
                     WHERE table_schema = 'public' 
                     AND table_name = %s
-                """, (table_name,))
+                """,
+                    (table_name,),
+                )
                 col_names = [row[0] for row in cur.fetchall()]
 
                 # Get table contents
                 cur.execute(f'SELECT * FROM "{table_name}" LIMIT {limit}')
                 rows = cur.fetchall()
-                
+
                 return col_names, rows, True
         except psycopg2.Error as e:
             print(f"Error fetching table contents: {e}")
