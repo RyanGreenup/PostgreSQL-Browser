@@ -93,6 +93,8 @@ class PostgreSQLGUI(QWidget):
             return True
         except psycopg2.Error as e:
             self.outputTextEdit.append(f"Error connecting to database: {e}")
+            print(e, file=sys.stderr)
+            sys.exit(1)
             return False
 
     def listDatabases(self):
