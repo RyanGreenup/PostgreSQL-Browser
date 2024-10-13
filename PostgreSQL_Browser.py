@@ -54,21 +54,21 @@ class PostgreSQLGUI(QMainWindow):
         menubar = self.menuBar()
 
         # Database menu
-        database_menu = menubar.addMenu('Database')
-        
-        connect_action = QAction('Connect & List Databases', self)
+        database_menu = menubar.addMenu("Database")
+
+        connect_action = QAction("Connect & List Databases", self)
         connect_action.triggered.connect(self.listDatabases)
         database_menu.addAction(connect_action)
 
-        create_db_action = QAction('Create New Database', self)
+        create_db_action = QAction("Create New Database", self)
         create_db_action.triggered.connect(self.createDatabase)
         database_menu.addAction(create_db_action)
 
-        delete_db_action = QAction('Delete Database', self)
+        delete_db_action = QAction("Delete Database", self)
         delete_db_action.triggered.connect(self.deleteDatabase)
         database_menu.addAction(delete_db_action)
 
-        show_db_action = QAction('Show Database Contents', self)
+        show_db_action = QAction("Show Database Contents", self)
         show_db_action.triggered.connect(self.showDatabaseContents)
         database_menu.addAction(show_db_action)
 
@@ -192,7 +192,9 @@ class PostgreSQLGUI(QMainWindow):
                             f"Database {dbname} created successfully."
                         )
                         self.listDatabases()  # Refresh the database tree
-                        self.statusBar.showMessage(f"Database {dbname} created successfully")
+                        self.statusBar.showMessage(
+                            f"Database {dbname} created successfully"
+                        )
             except psycopg2.Error as e:
                 self.outputTextEdit.append(f"Error creating database: {e}")
                 self.statusBar.showMessage("Error creating database")
@@ -222,7 +224,9 @@ class PostgreSQLGUI(QMainWindow):
                                 f"Database {dbname} deleted successfully."
                             )
                             self.listDatabases()  # Refresh the database tree
-                            self.statusBar.showMessage(f"Database {dbname} deleted successfully")
+                            self.statusBar.showMessage(
+                                f"Database {dbname} deleted successfully"
+                            )
                 except psycopg2.Error as e:
                     self.outputTextEdit.append(f"Error deleting database: {e}")
                     self.statusBar.showMessage("Error deleting database")
@@ -260,7 +264,9 @@ class PostgreSQLGUI(QMainWindow):
                     ]  # Remove the (table_type) part
                     self.showTableContents(dbname, table_name)
                     self.updateTableView(dbname, table_name)
-                    self.statusBar.showMessage(f"Showing contents of table {table_name}")
+                    self.statusBar.showMessage(
+                        f"Showing contents of table {table_name}"
+                    )
         else:
             self.outputTextEdit.append("No item selected.")
             # Clear the table view when nothing is selected
