@@ -11,6 +11,13 @@ class DatabaseManager:
         self.password = password
         self.conn: Optional[PsycopgConnection] = None
 
+    def update_connection(self, host: str, port: int, username: str, password: str):
+        self.host = host
+        self.port = port
+        self.username = username
+        self.password = password
+        self.conn = None  # Reset the connection so it will be re-established with new parameters
+
     def connect(self, dbname: str = "postgres") -> bool:
         try:
             if self.conn:
