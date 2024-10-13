@@ -24,6 +24,7 @@ class PostgreSQLGUI(QWidget):
         super().__init__()
         self.conn = None
         self.initUI()
+        self.autoConnect()
 
     def initUI(self):
         self.setWindowTitle("PostgreSQL Database Manager")
@@ -94,7 +95,6 @@ class PostgreSQLGUI(QWidget):
         except psycopg2.Error as e:
             self.outputTextEdit.append(f"Error connecting to database: {e}")
             print(e, file=sys.stderr)
-            sys.exit(1)
             return False
 
     def listDatabases(self):
@@ -203,6 +203,15 @@ class PostgreSQLGUI(QWidget):
                 self.outputTextEdit.append(f"Error showing database contents: {e}")
         else:
             self.outputTextEdit.append("No database selected.")
+
+    def autoConnect(self):
+        if self.connectToDatabase():
+            self.listDatabases()
+        else:
+            self.showErrorDialog("Connection Failed", "Failed to connect to the database. Please check your connection settings.")
+
+    def showErrorDialog(self, title, message):
+        QMessageBox.critical(self, title, message)
 
 
 @app.command()
