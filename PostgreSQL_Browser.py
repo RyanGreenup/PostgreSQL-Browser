@@ -2,6 +2,7 @@ import sys
 import psycopg2
 import typer
 from typing import Optional
+from psycopg2.extensions import connection as PsycopgConnection
 from PyQt6.QtWidgets import (
     QApplication,
     QWidget,
@@ -23,7 +24,7 @@ app = typer.Typer()
 class PostgreSQLGUI(QWidget):
     def __init__(self, host, port, username, password):
         super().__init__()
-        self.conn = None
+        self.conn: Optional[PsycopgConnection] = None
         self.host = host
         self.port = port
         self.username = username
@@ -108,29 +109,31 @@ class PostgreSQLGUI(QWidget):
     def listDatabases(self):
         if self.connectToDatabase():
             self.outputTextEdit.append("Listing databases...")
-            cur = self.conn.cursor()
-            cur.execute("SELECT datname FROM pg_database WHERE datistemplate = false")
-            databases = cur.fetchall()
-            self.dbTree.clear()
-            for db in databases:
-                db_item = QTreeWidgetItem(self.dbTree, [db[0]])
-                self.listTables(db[0], db_item)
-            cur.close()
+            if self.conn:
+                cur = self.conn.cursor()
+                cur.execute("SELECT datname FROM pg_database WHERE datistemplate = false")
+                databases = cur.fetchall()
+                self.dbTree.clear()
+                for db in databases:
+                    db_item = QTreeWidgetItem(self.dbTree, [db[0]])
+                    self.listTables(db[0], db_item)
+                cur.close()
 
     def listTables(self, dbname, parent_item):
         if self.connectToDatabase(dbname):
-            cur = self.conn.cursor()
-            cur.execute(
+            if self.conn:
+                cur = self.conn.cursor()
+                cur.execute(
+                    """
+                    SELECT table_name, table_type 
+                    FROM information_schema.tables 
+                    WHERE table_schema='public'
                 """
-                SELECT table_name, table_type 
-                FROM information_schema.tables 
-                WHERE table_schema='public'
-            """
-            )
-            tables = cur.fetchall()
-            for table, table_type in tables:
-                table_item = QTreeWidgetItem(parent_item, [f"{table} ({table_type})"])
-            cur.close()
+                )
+                tables = cur.fetchall()
+                for table, table_type in tables:
+                    table_item = QTreeWidgetItem(parent_item, [f"{table} ({table_type})"])
+                cur.close()
 
     def createDatabase(self):
         dbname, ok = QInputDialog.getText(
@@ -139,14 +142,15 @@ class PostgreSQLGUI(QWidget):
         if ok and dbname:
             try:
                 if self.connectToDatabase():
-                    self.conn.autocommit = True
-                    cur = self.conn.cursor()
-                    cur.execute(f'CREATE DATABASE "{dbname}"')
-                    cur.close()
-                    self.outputTextEdit.append(
-                        f"Database {dbname} created successfully."
-                    )
-                    self.listDatabases()  # Refresh the database tree
+                    if self.conn:
+                        self.conn.autocommit = True
+                        cur = self.conn.cursor()
+                        cur.execute(f'CREATE DATABASE "{dbname}"')
+                        cur.close()
+                        self.outputTextEdit.append(
+                            f"Database {dbname} created successfully."
+                        )
+                        self.listDatabases()  # Refresh the database tree
             except psycopg2.Error as e:
                 self.outputTextEdit.append(f"Error creating database: {e}")
 
@@ -166,14 +170,15 @@ class PostgreSQLGUI(QWidget):
             if reply == QMessageBox.StandardButton.Yes:
                 try:
                     if self.connectToDatabase():
-                        self.conn.autocommit = True
-                        cur = self.conn.cursor()
-                        cur.execute(f'DROP DATABASE IF EXISTS "{dbname}"')
-                        cur.close()
-                        self.outputTextEdit.append(
-                            f"Database {dbname} deleted successfully."
-                        )
-                        self.listDatabases()  # Refresh the database tree
+                        if self.conn:
+                            self.conn.autocommit = True
+                            cur = self.conn.cursor()
+                            cur.execute(f'DROP DATABASE IF EXISTS "{dbname}"')
+                            cur.close()
+                            self.outputTextEdit.append(
+                                f"Database {dbname} deleted successfully."
+                            )
+                            self.listDatabases()  # Refresh the database tree
                 except psycopg2.Error as e:
                     self.outputTextEdit.append(f"Error deleting database: {e}")
             else:
@@ -191,33 +196,37 @@ class PostgreSQLGUI(QWidget):
                 self.outputTextEdit.append(f"Contents of database {dbname}:")
                 for i in range(selected_item.childCount()):
                     table_item = selected_item.child(i)
-                    table_name = table_item.text(0).split(" ")[
+                    if table_item:
+                        table_name = table_item.text(0).split(" ")[
+                            0
+                        ]  # Remove the (table_type) part
+                        self.showTableContents(dbname, table_name)
+            else:  # Table node
+                parent_item = selected_item.parent()
+                if parent_item:
+                    dbname = parent_item.text(0)
+                    table_name = selected_item.text(0).split(" ")[
                         0
                     ]  # Remove the (table_type) part
                     self.showTableContents(dbname, table_name)
-            else:  # Table node
-                dbname = selected_item.parent().text(0)
-                table_name = selected_item.text(0).split(" ")[
-                    0
-                ]  # Remove the (table_type) part
-                self.showTableContents(dbname, table_name)
         else:
             self.outputTextEdit.append("No item selected.")
 
     def showTableContents(self, dbname, table_name):
         try:
             if self.connectToDatabase(dbname):
-                cur = self.conn.cursor()
-                cur.execute(
-                    f"SELECT * FROM {table_name} LIMIT 5"
-                )  # Limit to 5 rows for brevity
-                rows = cur.fetchall()
-                self.outputTextEdit.append(
-                    f"  Contents of {table_name} (first 5 rows):"
-                )
-                for row in rows:
-                    self.outputTextEdit.append(f"    - {row}")
-                cur.close()
+                if self.conn:
+                    cur = self.conn.cursor()
+                    cur.execute(
+                        f"SELECT * FROM {table_name} LIMIT 5"
+                    )  # Limit to 5 rows for brevity
+                    rows = cur.fetchall()
+                    self.outputTextEdit.append(
+                        f"  Contents of {table_name} (first 5 rows):"
+                    )
+                    for row in rows:
+                        self.outputTextEdit.append(f"    - {row}")
+                    cur.close()
         except psycopg2.Error as e:
             self.outputTextEdit.append(f"Error showing table contents: {e}")
 
