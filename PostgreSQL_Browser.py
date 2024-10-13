@@ -247,8 +247,12 @@ class PostgreSQLGUI(QMainWindow):
             else:  # Table node
                 parent_item = selected_item.parent()
                 if parent_item:
-                    table_name = selected_item.text(0).split(" ")[0]  # Remove the (table_type) part
-                    self.statusBar.showMessage(f"Showing contents of table {table_name}")
+                    table_name = selected_item.text(0).split(" ")[
+                        0
+                    ]  # Remove the (table_type) part
+                    self.statusBar.showMessage(
+                        f"Showing contents of table {table_name}"
+                    )
         else:
             self.statusBar.showMessage("No item selected")
 
@@ -264,10 +268,14 @@ class PostgreSQLGUI(QMainWindow):
                 parent_item = current.parent()
                 if parent_item:
                     dbname = parent_item.text(0)
-                    table_name = current.text(0).split(" ")[0]  # Remove the (table_type) part
+                    table_name = current.text(0).split(" ")[
+                        0
+                    ]  # Remove the (table_type) part
                     self.showTableContents(dbname, table_name)
                     self.updateTableView(dbname, table_name)
-                    self.statusBar.showMessage(f"Showing contents of table {table_name}")
+                    self.statusBar.showMessage(
+                        f"Showing contents of table {table_name}"
+                    )
 
     def showTableContents(self, dbname, table_name):
         try:
