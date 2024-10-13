@@ -13,6 +13,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt, QSettings
 from PyQt6.QtGui import QAction
+from PyQt6.QtCore import Qt
 
 from database_manager import DatabaseManager
 from gui_components import DatabaseTreeWidget, TableView
@@ -64,6 +65,12 @@ class MainWindow(QMainWindow):
         save_settings_action = QAction("Save Connection Settings", self)
         save_settings_action.triggered.connect(self.save_connection_settings)
         settings_menu.addAction(save_settings_action)
+
+        query_menu = menubar.addMenu("Query")
+        execute_query_action = QAction("Execute Query", self)
+        execute_query_action.triggered.connect(self.execute_custom_query)
+        execute_query_action.setShortcut("Ctrl+Return")  # Set the shortcut
+        query_menu.addAction(execute_query_action)
 
     def setup_connection_widget(self, parent_layout):
         self.connection_widget = ConnectionWidget(self.db_manager)
