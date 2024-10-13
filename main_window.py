@@ -197,10 +197,31 @@ class MainWindow(QMainWindow):
             self.output_text_edit.append(f"Error listing databases: {str(e)}")
             self.status_bar.showMessage("Error listing databases")
 
-    def update_db_tree_display(self, database):
-        if database:
-            tables_and_fields = self.db_manager.get_tables_and_fields(database)
-            self.db_tree.populate(database, tables_and_fields)
+    def update_db_tree_display(self, selected_database=None):
+        try:
+            if selected_database:
+                # Get tables and fields for the selected database
+                tables_and_fields = self.db_manager.get_tables_and_fields(selected_database)
+                
+                # Populate the tree with the selected database and its tables/fields
+                self.db_tree.populate([selected_database], {selected_database: tables_and_fields})
+                
+                # Expand the selected database
+                root = self.db_tree.invisibleRootItem()
+                if root.childCount() > 0:
+                    db_item = root.child(0)
+                    db_item.setExpanded(True)
+            else:
+                # If no database is selected, show all databases
+                databases = self.db_manager.list_databases()
+                tables_dict = {db: self.db_manager.get_tables_and_fields(db) for db in databases}
+                self.db_tree.populate(databases, tables_dict)
+            
+            self.output_text_edit.append("Database tree updated")
+            self.status_bar.showMessage("Database tree updated")
+        except Exception as e:
+            self.output_text_edit.append(f"Error updating database tree: {str(e)}")
+            self.status_bar.showMessage("Error updating database tree")
 
     def on_database_selected(self, database):
         if database:
