@@ -142,7 +142,9 @@ class DatabaseManager:
                     for row in rows:
                         result += str(row) + "\n"
                 else:
-                    result = f"Query executed successfully. Rows affected: {cur.rowcount}"
+                    result = (
+                        f"Query executed successfully. Rows affected: {cur.rowcount}"
+                    )
                 self.conn.commit()
                 return result
         except psycopg2.Error as e:

@@ -1,6 +1,15 @@
 from PyQt6.QtWidgets import (
-    QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QMenuBar, QStatusBar, QSplitter, QInputDialog, QMessageBox, QTextEdit,
-    QPushButton
+    QMainWindow,
+    QVBoxLayout,
+    QHBoxLayout,
+    QWidget,
+    QMenuBar,
+    QStatusBar,
+    QSplitter,
+    QInputDialog,
+    QMessageBox,
+    QTextEdit,
+    QPushButton,
 )
 from PyQt6.QtCore import Qt, QSettings
 from PyQt6.QtGui import QAction
@@ -9,10 +18,12 @@ from database_manager import DatabaseManager
 from gui_components import DatabaseTreeWidget, TableView
 from connection_widget import ConnectionWidget
 
+
 class MainWindow(QMainWindow):
     def __init__(self, host, port, username, password):
         super().__init__()
         self.db_manager = DatabaseManager(host, port, username, password)
+        # TODO Clean up the settings
         self.settings = QSettings("YourCompany", "PostgreSQLBrowser")
         self.initUI()
         self.load_connection_settings()
@@ -225,7 +236,9 @@ class MainWindow(QMainWindow):
                 self.output_text_edit.append(f"Error executing query: {str(e)}")
                 self.status_bar.showMessage("Error executing query")
         else:
-            self.output_text_edit.append("Please select a database before executing a query.")
+            self.output_text_edit.append(
+                "Please select a database before executing a query."
+            )
             self.status_bar.showMessage("No database selected")
 
     def save_connection_settings(self):
@@ -240,7 +253,7 @@ class MainWindow(QMainWindow):
         port = int(self.settings.value("port", self.db_manager.port))
         username = self.settings.value("username", self.db_manager.username)
         password = self.settings.value("password", self.db_manager.password)
-        
+
         self.connection_widget.host_edit.setText(host)
         self.connection_widget.port_edit.setText(str(port))
         self.connection_widget.username_edit.setText(username)

@@ -1,5 +1,6 @@
 from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLabel, QLineEdit
 
+
 class ConnectionWidget(QWidget):
     def __init__(self, db_manager):
         super().__init__()

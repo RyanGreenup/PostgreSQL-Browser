@@ -7,6 +7,7 @@ from main_window import MainWindow
 
 app = typer.Typer()
 
+
 @app.command()
 def main(
     host: str = typer.Option("localhost", help="Database host"),
@@ -20,6 +21,7 @@ def main(
     main_window = MainWindow(host, port, username, password)
     main_window.show()
     sys.exit(qt_app.exec())
+
 
 if __name__ == "__main__":
     app()

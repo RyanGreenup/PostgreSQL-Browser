@@ -1,0 +1,5 @@
+Search that runs fts on the selected table with a selected field
+Allow Editing the Database
+Allow running SQL queries
+    - This should list all tables and fields as a tree_widget.
+
