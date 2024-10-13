@@ -1,10 +1,12 @@
 import sys
+from PyQt6.QtCore import Qt
 import psycopg2
 import typer
 from typing import Optional
 from psycopg2.extensions import connection as PsycopgConnection
 from PyQt6.QtWidgets import (
     QApplication,
+    QSplitter,
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
@@ -80,7 +82,12 @@ class PostgreSQLGUI(QWidget):
         mainLayout.addWidget(self.deleteDbButton)
         mainLayout.addWidget(self.showDbButton)
         mainLayout.addWidget(QLabel("Databases and Tables:"))
-        mainLayout.addWidget(self.dbTree)
+        main_splitter = QSplitter(Qt.Orientation.Horizontal)
+        main_splitter.addWidget(self.dbTree)
+        # TODO Add the preview of the selected table
+        main_splitter.addWidget(
+        main_splitter.setSizes([100, 400])
+        mainLayout.addWidget(main_splitter)
         mainLayout.addWidget(self.outputTextEdit)
 
         self.setLayout(mainLayout)
@@ -125,8 +132,8 @@ class PostgreSQLGUI(QWidget):
                 cur = self.conn.cursor()
                 cur.execute(
                     """
-                    SELECT table_name, table_type 
-                    FROM information_schema.tables 
+                    SELECT table_name, table_type
+                    FROM information_schema.tables
                     WHERE table_schema='public'
                 """
                 )
