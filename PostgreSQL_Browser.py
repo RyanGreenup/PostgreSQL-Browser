@@ -41,6 +41,7 @@ class PostgreSQLGUI(QMainWindow):
 
         actions = [
             ("Connect & List Databases", self.list_databases),
+            ("Refresh", self.refresh_databases),
             ("Create New Database", self.create_database),
             ("Delete Database", self.delete_database),
             ("Show Database Contents", self.show_database_contents)
@@ -184,6 +185,12 @@ class PostgreSQLGUI(QMainWindow):
             self.output_text_edit.append(f"Error fetching contents of table {table_name}")
             self.status_bar.showMessage(f"Error showing table contents: {table_name}")
             self.table_view.setModel(None)
+
+    def refresh_databases(self):
+        self.db_manager.connect()  # Reconnect to ensure we have the latest data
+        self.list_databases()
+        self.output_text_edit.append("Database list refreshed.")
+        self.status_bar.showMessage("Database list refreshed")
 
 @app.command()
 def main(
