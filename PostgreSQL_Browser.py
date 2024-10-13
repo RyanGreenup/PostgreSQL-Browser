@@ -279,8 +279,8 @@ class PostgreSQLGUI(QMainWindow):
                 if self.conn:
                     cur = self.conn.cursor()
                     cur.execute(
-                        f"SELECT * FROM {table_name} LIMIT 5"
-                    )  # Limit to 5 rows for brevity
+                        f'SELECT * FROM "{table_name}" LIMIT 5'
+                    )  # Use quoted identifier
                     rows = cur.fetchall()
                     self.outputTextEdit.append(
                         f"  Contents of {table_name} (first 5 rows):"
@@ -313,8 +313,8 @@ class PostgreSQLGUI(QMainWindow):
                 if self.conn:
                     cur = self.conn.cursor()
                     cur.execute(
-                        f"SELECT * FROM {table_name} LIMIT 1000"
-                    )  # Limit to 1000 rows for performance
+                        f'SELECT * FROM "{table_name}" LIMIT 1000'
+                    )  # Use quoted identifier
                     rows = cur.fetchall()
 
                     # Get column names
