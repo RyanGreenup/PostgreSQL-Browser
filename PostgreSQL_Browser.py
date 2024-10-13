@@ -114,8 +114,8 @@ class PostgreSQLGUI(QWidget):
         selected_db = self.dbList.currentItem()
         if selected_db:
             dbname = selected_db.text()
-            reply = QMessageBox.question(self, 'Delete Database', f"Are you sure you want to delete database '{dbname}'?", 
-                             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, 
+            reply = QMessageBox.question(self, 'Delete Database', f"Are you sure you want to delete database '{dbname}'?",
+                             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                              QMessageBox.StandardButton.No)
             if reply == QMessageBox.StandardButton.Yes:
                 try:
