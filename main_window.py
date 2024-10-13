@@ -1,16 +1,15 @@
 from PyQt6.QtWidgets import (
     QMainWindow,
     QVBoxLayout,
-    QHBoxLayout,
     QWidget,
-    QMenuBar,
     QStatusBar,
     QSplitter,
     QInputDialog,
     QMessageBox,
     QTextEdit,
-    QPushButton,
+    QTreeWidget,
 )
+
 from PyQt6.QtCore import Qt, QSettings
 from PyQt6.QtGui import QAction
 from PyQt6.QtCore import Qt
@@ -88,13 +87,8 @@ class MainWindow(QMainWindow):
         self.table_view = TableView()
         right_side.addWidget(self.table_view)
 
-        self.query_edit = QTextEdit()
-        self.query_edit.setPlaceholderText("Enter your SQL query here...")
+        self.query_edit = SQLQueryEditor()
         right_side.addWidget(self.query_edit)
-
-        execute_query_button = QPushButton("Execute Query")
-        execute_query_button.clicked.connect(self.execute_custom_query)
-        right_side.addWidget(execute_query_button)
 
         main_splitter.addWidget(right_side)
         main_splitter.setSizes([200, 600])
@@ -237,23 +231,30 @@ class MainWindow(QMainWindow):
             dbname = selected_item.text(0)
             try:
                 result = self.db_manager.execute_custom_query(dbname, query)
-                
+
                 # Check if the result is a tuple (indicating a SELECT query)
                 if isinstance(result, tuple) and len(result) == 2:
                     col_names, rows = result
                     self.table_view.update_content(col_names, rows)
                     self.output_text_edit.clear()
                     if rows:
-                        self.output_text_edit.append(f"Query executed successfully. Showing results in table view.")
-                        self.output_text_edit.append(f"Number of rows returned: {len(rows)}")
+                        self.output_text_edit.append(
+                            f"Query executed successfully. Showing results in table view."
+                        )
+                        self.output_text_edit.append(
+                            f"Number of rows returned: {len(rows)}"
+                        )
                     else:
-                        self.output_text_edit.append(f"Query executed successfully. No rows returned.")
+                        self.output_text_edit.append(
+                            f"Query executed successfully. No rows returned."
+                        )
                 else:
                     # For non-SELECT queries (INSERT, UPDATE, DELETE, etc.)
                     self.table_view.setModel(None)  # Clear the table view
                     self.output_text_edit.clear()
-                    self.output_text_edit.append(f"Query executed successfully:\n{result}")
-                
+                    self.output_text_edit.append(
+                        f"Query executed successfully:\n{result}"
+                    )
                 self.status_bar.showMessage("Query executed successfully")
             except Exception as e:
                 self.output_text_edit.clear()
@@ -262,7 +263,9 @@ class MainWindow(QMainWindow):
                 self.table_view.setModel(None)  # Clear the table view
         else:
             self.output_text_edit.clear()
-            self.output_text_edit.append("Please select a database before executing a query.")
+            self.output_text_edit.append(
+                "Please select a database before executing a query."
+            )
             self.status_bar.showMessage("No database selected")
             self.table_view.setModel(None)  # Clear the table view
 
@@ -283,3 +286,48 @@ class MainWindow(QMainWindow):
         self.connection_widget.port_edit.setText(str(port))
         self.connection_widget.username_edit.setText(username)
         self.connection_widget.password_edit.setText(password)
+
+
+QTreeWidget
+
+
+class DBTreeDisplay(QTreeWidget):
+    pass
+
+
+# TODO Implement the following classes
+class DBChooser(QComboBox):
+    """
+    Allow the user to choose a database
+    """
+
+
+
+
+class SQLQueryEditor(QTextEdit):
+    """
+    Allow the user to input a SQL query
+    """
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setPlaceholderText("Enter your SQL query here...")
+
+
+class SQLQuery(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.read_only_tree = DBTreeDisplay()
+        self.query_edit = SQLQueryEditor()
+        self.db_chooser = DBChooser()
+        self.initUI()
+
+    def initUI(self):
+        splitter = QSplitter()
+        splitter.addWidget(self.query_edit)
+        splitter.addWidget(self.read_only_tree)
+        splitter.setSizes([600, 200])
+        layout = QVBoxLayout()
+        layout.addWidget(splitter)
+        layout.addWidget(self.db_chooser)
+        self.setLayout(layout)
