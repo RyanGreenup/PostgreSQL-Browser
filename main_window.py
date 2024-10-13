@@ -94,8 +94,8 @@ class MainWindow(QMainWindow):
 
         self.setup_menu_bar()
         self.setup_connection_widget(main_layout)
+        self.setup_status_bar()  # Move this line before setup_main_area
         self.setup_main_area(main_layout)
-        self.setup_status_bar()
 
         self.list_databases()
 
@@ -146,7 +146,10 @@ class MainWindow(QMainWindow):
         self.table_view = TableView()
         right_side.addWidget(self.table_view)
 
-        # self.query_edit = SQLQueryEditor()
+        # Create output_text_edit before using it
+        self.output_text_edit = QTextEdit()
+        self.output_text_edit.setReadOnly(True)
+
         self.query_edit = SQLQuery(
             db_manager=self.db_manager,
             on_db_choice_callback=self.update_db_tree_display,
@@ -157,9 +160,6 @@ class MainWindow(QMainWindow):
 
         main_splitter.addWidget(right_side)
         main_splitter.setSizes([300, 500])
-
-        self.output_text_edit = QTextEdit()
-        self.output_text_edit.setReadOnly(True)
 
         outer_splitter.addWidget(main_splitter)
         outer_splitter.addWidget(self.output_text_edit)
