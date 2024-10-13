@@ -31,6 +31,7 @@ class PostgreSQLGUI(QMainWindow):
         super().__init__()
         self.db_manager = DatabaseManager(host, port, username, password)
         self.initUI()
+        self.focus_on_tree_widget()
 
     def initUI(self):
         self.setWindowTitle("PostgreSQL Database Manager")
@@ -221,6 +222,9 @@ class PostgreSQLGUI(QMainWindow):
         self.list_databases()
         self.output_text_edit.append("Database list refreshed.")
         self.status_bar.showMessage("Database list refreshed")
+
+    def focus_on_tree_widget(self):
+        self.db_tree.setFocus()
 
 
 @app.command()
