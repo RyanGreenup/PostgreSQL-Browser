@@ -8,10 +8,9 @@ from psycopg2.extensions import connection as PsycopgConnection
 from PyQt6.QtWidgets import (
     QApplication,
     QSplitter,
-    QWidget,
+    QMainWindow,
     QVBoxLayout,
     QHBoxLayout,
-    QPushButton,
     QLabel,
     QLineEdit,
     QTextEdit,
@@ -20,12 +19,17 @@ from PyQt6.QtWidgets import (
     QMessageBox,
     QInputDialog,
     QTableView,
+    QWidget,
+    QMenuBar,
+    QMenu,
+    QStatusBar,
 )
+from PyQt6.QtGui import QAction
 
 app = typer.Typer()
 
 
-class PostgreSQLGUI(QWidget):
+class PostgreSQLGUI(QMainWindow):
     def __init__(self, host, port, username, password):
         super().__init__()
         self.conn: Optional[PsycopgConnection] = None
@@ -39,9 +43,34 @@ class PostgreSQLGUI(QWidget):
 
     def initUI(self):
         self.setWindowTitle("PostgreSQL Database Manager")
-        self.setGeometry(300, 300, 600, 500)
+        self.setGeometry(300, 300, 800, 600)
 
-        mainLayout = QVBoxLayout()
+        # Create central widget and layout
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+        mainLayout = QVBoxLayout(central_widget)
+
+        # Create menu bar
+        menubar = self.menuBar()
+
+        # Database menu
+        database_menu = menubar.addMenu('Database')
+        
+        connect_action = QAction('Connect & List Databases', self)
+        connect_action.triggered.connect(self.listDatabases)
+        database_menu.addAction(connect_action)
+
+        create_db_action = QAction('Create New Database', self)
+        create_db_action.triggered.connect(self.createDatabase)
+        database_menu.addAction(create_db_action)
+
+        delete_db_action = QAction('Delete Database', self)
+        delete_db_action.triggered.connect(self.deleteDatabase)
+        database_menu.addAction(delete_db_action)
+
+        show_db_action = QAction('Show Database Contents', self)
+        show_db_action.triggered.connect(self.showDatabaseContents)
+        database_menu.addAction(show_db_action)
 
         # Connection settings
         connectionLayout = QHBoxLayout()
@@ -60,17 +89,7 @@ class PostgreSQLGUI(QWidget):
         connectionLayout.addWidget(QLabel("Password:"))
         connectionLayout.addWidget(self.passwordEdit)
 
-        # Buttons
-        self.connectButton = QPushButton("Connect & List Databases")
-        self.connectButton.clicked.connect(self.listDatabases)
-        self.createDbButton = QPushButton("Create New Database")
-        self.createDbButton.clicked.connect(self.createDatabase)
-        self.deleteDbButton = QPushButton("Delete Database")
-        self.deleteDbButton.clicked.connect(self.deleteDatabase)
-        self.showDbButton = QPushButton("Show Database Contents")
-        self.showDbButton.clicked.connect(self.showDatabaseContents)
-
-        # Replace Database List with Tree Widget
+        # Tree Widget
         self.dbTree = QTreeWidget()
         self.dbTree.setHeaderLabels(["Databases and Tables"])
 
@@ -80,27 +99,26 @@ class PostgreSQLGUI(QWidget):
 
         # Add widgets to layout
         mainLayout.addLayout(connectionLayout)
-        mainLayout.addWidget(self.connectButton)
-        mainLayout.addWidget(self.createDbButton)
-        mainLayout.addWidget(self.deleteDbButton)
-        mainLayout.addWidget(self.showDbButton)
         mainLayout.addWidget(QLabel("Databases and Tables:"))
 
         outer_splitter = QSplitter(Qt.Orientation.Vertical)
 
         main_splitter = QSplitter(Qt.Orientation.Horizontal)
         main_splitter.addWidget(self.dbTree)
-        # Add the preview of the selected table
         self.tableView = QTableView()
         main_splitter.addWidget(self.tableView)
-        main_splitter.setSizes([100, 400])
+        main_splitter.setSizes([200, 600])
         outer_splitter.addWidget(main_splitter)
         outer_splitter.addWidget(self.outputTextEdit)
-        outer_splitter.setSizes([200, 100])
+        outer_splitter.setSizes([400, 200])
         mainLayout.addWidget(outer_splitter)
 
-        self.setLayout(mainLayout)
         self.dbTree.itemClicked.connect(self.showDatabaseContents)
+
+        # Set up status bar
+        self.statusBar = QStatusBar()
+        self.setStatusBar(self.statusBar)
+        self.statusBar.showMessage("Ready")
 
     def connectToDatabase(
         self, dbname="postgres", host=None, port=None, user=None, password=None
@@ -126,6 +144,7 @@ class PostgreSQLGUI(QWidget):
     def listDatabases(self):
         if self.connectToDatabase():
             self.outputTextEdit.append("Listing databases...")
+            self.statusBar.showMessage("Listing databases...")
             if self.conn:
                 cur = self.conn.cursor()
                 cur.execute(
@@ -137,6 +156,7 @@ class PostgreSQLGUI(QWidget):
                     db_item = QTreeWidgetItem(self.dbTree, [db[0]])
                     self.listTables(db[0], db_item)
                 cur.close()
+            self.statusBar.showMessage("Databases listed")
 
     def listTables(self, dbname, parent_item):
         if self.connectToDatabase(dbname):
@@ -172,8 +192,10 @@ class PostgreSQLGUI(QWidget):
                             f"Database {dbname} created successfully."
                         )
                         self.listDatabases()  # Refresh the database tree
+                        self.statusBar.showMessage(f"Database {dbname} created successfully")
             except psycopg2.Error as e:
                 self.outputTextEdit.append(f"Error creating database: {e}")
+                self.statusBar.showMessage("Error creating database")
 
     def deleteDatabase(self):
         selected_item = self.dbTree.currentItem()
@@ -200,14 +222,18 @@ class PostgreSQLGUI(QWidget):
                                 f"Database {dbname} deleted successfully."
                             )
                             self.listDatabases()  # Refresh the database tree
+                            self.statusBar.showMessage(f"Database {dbname} deleted successfully")
                 except psycopg2.Error as e:
                     self.outputTextEdit.append(f"Error deleting database: {e}")
+                    self.statusBar.showMessage("Error deleting database")
             else:
                 self.outputTextEdit.append(
                     f"Deletion of database '{dbname}' cancelled."
                 )
+                self.statusBar.showMessage("Database deletion cancelled")
         else:
             self.outputTextEdit.append("No database selected.")
+            self.statusBar.showMessage("No database selected for deletion")
 
     def showDatabaseContents(self):
         selected_item = self.dbTree.currentItem()
@@ -224,6 +250,7 @@ class PostgreSQLGUI(QWidget):
                         self.showTableContents(dbname, table_name)
                 # Clear the table view when a database is selected
                 self.tableView.setModel(None)
+                self.statusBar.showMessage(f"Showing contents of database {dbname}")
             else:  # Table node
                 parent_item = selected_item.parent()
                 if parent_item:
@@ -233,10 +260,12 @@ class PostgreSQLGUI(QWidget):
                     ]  # Remove the (table_type) part
                     self.showTableContents(dbname, table_name)
                     self.updateTableView(dbname, table_name)
+                    self.statusBar.showMessage(f"Showing contents of table {table_name}")
         else:
             self.outputTextEdit.append("No item selected.")
             # Clear the table view when nothing is selected
             self.tableView.setModel(None)
+            self.statusBar.showMessage("No item selected")
 
     def showTableContents(self, dbname, table_name):
         try:
@@ -261,11 +290,13 @@ class PostgreSQLGUI(QWidget):
             host=self.host, port=self.port, user=self.username, password=self.password
         ):
             self.listDatabases()
+            self.statusBar.showMessage("Connected successfully")
         else:
             self.showErrorDialog(
                 "Connection Failed",
                 "Failed to connect to the database. Please check your connection settings.",
             )
+            self.statusBar.showMessage("Connection failed")
 
     def showErrorDialog(self, title, message):
         QMessageBox.critical(self, title, message)
@@ -298,8 +329,10 @@ class PostgreSQLGUI(QWidget):
                     self.tableView.resizeColumnsToContents()
 
                     cur.close()
+                    self.statusBar.showMessage(f"Showing table: {table_name}")
         except psycopg2.Error as e:
             self.outputTextEdit.append(f"Error updating table view: {e}")
+            self.statusBar.showMessage(f"Error updating table view: {table_name}")
 
 
 @app.command()
