@@ -92,6 +92,7 @@ class PostgreSQLGUI(QMainWindow):
         # Tree Widget
         self.dbTree = QTreeWidget()
         self.dbTree.setHeaderLabels(["Databases and Tables"])
+        self.dbTree.currentItemChanged.connect(self.onTreeItemChanged)
 
         # Output text area
         self.outputTextEdit = QTextEdit()
@@ -112,8 +113,6 @@ class PostgreSQLGUI(QMainWindow):
         outer_splitter.addWidget(self.outputTextEdit)
         outer_splitter.setSizes([400, 200])
         mainLayout.addWidget(outer_splitter)
-
-        self.dbTree.itemClicked.connect(self.showDatabaseContents)
 
         # Set up status bar
         self.statusBar = QStatusBar()
@@ -244,34 +243,37 @@ class PostgreSQLGUI(QMainWindow):
         if selected_item:
             if selected_item.parent() is None:  # Database node
                 dbname = selected_item.text(0)
+                self.statusBar.showMessage(f"Showing contents of database {dbname}")
+            else:  # Table node
+                parent_item = selected_item.parent()
+                if parent_item:
+                    table_name = selected_item.text(0).split(" ")[0]  # Remove the (table_type) part
+                    self.statusBar.showMessage(f"Showing contents of table {table_name}")
+        else:
+            self.statusBar.showMessage("No item selected")
+
+    def onTreeItemChanged(self, current, previous):
+        if current:
+            if current.parent() is None:  # Database node
+                dbname = current.text(0)
+                self.outputTextEdit.clear()
                 self.outputTextEdit.append(f"Contents of database {dbname}:")
-                for i in range(selected_item.childCount()):
-                    table_item = selected_item.child(i)
+                for i in range(current.childCount()):
+                    table_item = current.child(i)
                     if table_item:
-                        table_name = table_item.text(0).split(" ")[
-                            0
-                        ]  # Remove the (table_type) part
+                        table_name = table_item.text(0).split(" ")[0]  # Remove the (table_type) part
                         self.showTableContents(dbname, table_name)
                 # Clear the table view when a database is selected
                 self.tableView.setModel(None)
                 self.statusBar.showMessage(f"Showing contents of database {dbname}")
             else:  # Table node
-                parent_item = selected_item.parent()
+                parent_item = current.parent()
                 if parent_item:
                     dbname = parent_item.text(0)
-                    table_name = selected_item.text(0).split(" ")[
-                        0
-                    ]  # Remove the (table_type) part
+                    table_name = current.text(0).split(" ")[0]  # Remove the (table_type) part
                     self.showTableContents(dbname, table_name)
                     self.updateTableView(dbname, table_name)
-                    self.statusBar.showMessage(
-                        f"Showing contents of table {table_name}"
-                    )
-        else:
-            self.outputTextEdit.append("No item selected.")
-            # Clear the table view when nothing is selected
-            self.tableView.setModel(None)
-            self.statusBar.showMessage("No item selected")
+                    self.statusBar.showMessage(f"Showing contents of table {table_name}")
 
     def showTableContents(self, dbname, table_name):
         try:
