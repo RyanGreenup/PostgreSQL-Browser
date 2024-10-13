@@ -237,16 +237,34 @@ class MainWindow(QMainWindow):
             dbname = selected_item.text(0)
             try:
                 result = self.db_manager.execute_custom_query(dbname, query)
-                self.output_text_edit.append(f"Query executed successfully:\n{result}")
+                
+                # Check if the result is a tuple (indicating a SELECT query)
+                if isinstance(result, tuple) and len(result) == 2:
+                    col_names, rows = result
+                    self.table_view.update_content(col_names, rows)
+                    self.output_text_edit.clear()
+                    if rows:
+                        self.output_text_edit.append(f"Query executed successfully. Showing results in table view.")
+                        self.output_text_edit.append(f"Number of rows returned: {len(rows)}")
+                    else:
+                        self.output_text_edit.append(f"Query executed successfully. No rows returned.")
+                else:
+                    # For non-SELECT queries (INSERT, UPDATE, DELETE, etc.)
+                    self.table_view.setModel(None)  # Clear the table view
+                    self.output_text_edit.clear()
+                    self.output_text_edit.append(f"Query executed successfully:\n{result}")
+                
                 self.status_bar.showMessage("Query executed successfully")
             except Exception as e:
+                self.output_text_edit.clear()
                 self.output_text_edit.append(f"Error executing query: {str(e)}")
                 self.status_bar.showMessage("Error executing query")
+                self.table_view.setModel(None)  # Clear the table view
         else:
-            self.output_text_edit.append(
-                "Please select a database before executing a query."
-            )
+            self.output_text_edit.clear()
+            self.output_text_edit.append("Please select a database before executing a query.")
             self.status_bar.showMessage("No database selected")
+            self.table_view.setModel(None)  # Clear the table view
 
     def save_connection_settings(self):
         connection_info = self.connection_widget.get_connection_info()

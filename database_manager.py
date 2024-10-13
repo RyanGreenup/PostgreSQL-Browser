@@ -1,6 +1,6 @@
 import psycopg2
 from psycopg2.extensions import connection as PsycopgConnection
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Union
 
 
 class DatabaseManager:
@@ -128,7 +128,7 @@ class DatabaseManager:
             print(f"Error fetching table contents: {e}")
             return [], [], False
 
-    def execute_custom_query(self, dbname: str, query: str) -> str:
+    def execute_custom_query(self, dbname: str, query: str) -> Union[str, Tuple[List[str], List[Tuple]]]:
         if not self.connect(dbname):
             return "Error: Unable to connect to the database."
 
@@ -138,15 +138,12 @@ class DatabaseManager:
                 if cur.description:
                     columns = [desc[0] for desc in cur.description]
                     rows = cur.fetchall()
-                    result = "Columns: " + ", ".join(columns) + "\n"
-                    for row in rows:
-                        result += str(row) + "\n"
+                    self.conn.commit()
+                    return columns, rows
                 else:
-                    result = (
-                        f"Query executed successfully. Rows affected: {cur.rowcount}"
-                    )
-                self.conn.commit()
-                return result
+                    result = f"Query executed successfully. Rows affected: {cur.rowcount}"
+                    self.conn.commit()
+                    return result
         except psycopg2.Error as e:
             self.conn.rollback()
             return f"Error executing query: {str(e)}"
