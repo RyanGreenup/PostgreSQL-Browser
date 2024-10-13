@@ -1,5 +1,6 @@
 from PyQt6.QtWidgets import (
-    QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QMenuBar, QStatusBar, QSplitter, QInputDialog, QMessageBox, QTextEdit
+    QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QMenuBar, QStatusBar, QSplitter, QInputDialog, QMessageBox, QTextEdit,
+    QPushButton
 )
 from PyQt6.QtCore import Qt, QSettings
 from PyQt6.QtGui import QAction
