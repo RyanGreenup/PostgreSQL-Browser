@@ -8,6 +8,7 @@ from PyQt6.QtWidgets import (
     QMessageBox,
     QTextEdit,
     QTreeWidget,
+    QTreeWidgetItem,
     QComboBox,
 )
 
@@ -93,9 +94,15 @@ class MainWindow(QMainWindow):
         outer_splitter = QSplitter(Qt.Orientation.Vertical)
         main_splitter = QSplitter(Qt.Orientation.Horizontal)
 
+        left_side = QSplitter(Qt.Orientation.Vertical)
         self.db_tree = DatabaseTreeWidget()
         self.db_tree.itemSelectionChanged.connect(self.on_tree_selection_changed)
-        main_splitter.addWidget(self.db_tree)
+        left_side.addWidget(self.db_tree)
+
+        self.db_tree_display = DBTreeDisplay()
+        left_side.addWidget(self.db_tree_display)
+
+        main_splitter.addWidget(left_side)
 
         right_side = QSplitter(Qt.Orientation.Vertical)
         self.table_view = TableView()
@@ -105,7 +112,7 @@ class MainWindow(QMainWindow):
         right_side.addWidget(self.query_edit)
 
         main_splitter.addWidget(right_side)
-        main_splitter.setSizes([200, 600])
+        main_splitter.setSizes([300, 500])
 
         self.output_text_edit = QTextEdit()
         self.output_text_edit.setReadOnly(True)
@@ -118,6 +125,7 @@ class MainWindow(QMainWindow):
 
         # Add the DBChooser
         self.db_chooser = DBChooser(self)
+        self.db_chooser.currentTextChanged.connect(self.update_db_tree_display)
         parent_layout.addWidget(self.db_chooser)
 
     def setup_status_bar(self):
@@ -139,12 +147,17 @@ class MainWindow(QMainWindow):
             self.output_text_edit.append(f"Error listing databases: {str(e)}")
             self.status_bar.showMessage("Error listing databases")
 
+    def update_db_tree_display(self, database):
+        if database:
+            tables_and_fields = self.db_manager.get_tables_and_fields(database)
+            self.db_tree_display.populate(database, tables_and_fields)
+
     def on_database_selected(self, database):
         if database:
             self.output_text_edit.clear()
             self.output_text_edit.append(f"Selected database: {database}")
             self.status_bar.showMessage(f"Selected database: {database}")
-
+            
             # Update the tree view to highlight the selected database
             root = self.db_tree.invisibleRootItem()
             for i in range(root.childCount()):
@@ -152,6 +165,9 @@ class MainWindow(QMainWindow):
                 if item.text(0) == database:
                     self.db_tree.setCurrentItem(item)
                     break
+
+            # Update the DBTreeDisplay
+            self.update_db_tree_display(database)
 
     def create_database(self):
         dbname, ok = QInputDialog.getText(
@@ -260,11 +276,11 @@ class MainWindow(QMainWindow):
     def execute_custom_query(self):
         query = self.query_edit.toPlainText()
         selected_database = self.db_chooser.currentText()
-
+        
         if selected_database:
             try:
                 result = self.db_manager.execute_custom_query(selected_database, query)
-
+                
                 # Check if the result is a tuple (indicating a SELECT query)
                 if isinstance(result, tuple) and len(result) == 2:
                     col_names, rows = result
@@ -289,6 +305,9 @@ class MainWindow(QMainWindow):
                         f"Query executed successfully:\n{result}"
                     )
                 self.status_bar.showMessage("Query executed successfully")
+                
+                # Update the DBTreeDisplay after executing the query
+                self.update_db_tree_display(selected_database)
             except Exception as e:
                 self.output_text_edit.clear()
                 self.output_text_edit.append(f"Error executing query: {str(e)}")
@@ -323,7 +342,25 @@ QTreeWidget
 
 
 class DBTreeDisplay(QTreeWidget):
-    pass
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setHeaderLabels(["Database Objects"])
+        self.setColumnCount(1)
+        self.setSelectionMode(QTreeWidget.SelectionMode.NoSelection)
+        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+
+    def populate(self, db_name, tables_and_fields):
+        self.clear()
+        root = QTreeWidgetItem(self, [db_name])
+        root.setExpanded(True)
+
+        for table_name, fields in tables_and_fields.items():
+            table_item = QTreeWidgetItem(root, [table_name])
+            for field in fields:
+                field_item = QTreeWidgetItem(table_item, [field])
+            table_item.setExpanded(True)
+
+        self.expandAll()
 
 
 

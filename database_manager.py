@@ -1,6 +1,6 @@
 import psycopg2
 from psycopg2.extensions import connection as PsycopgConnection
-from typing import Optional, List, Tuple, Union
+from typing import Optional, List, Tuple, Union, Dict
 
 
 class DatabaseManager:
@@ -151,3 +151,31 @@ class DatabaseManager:
         except psycopg2.Error as e:
             self.conn.rollback()
             return f"Error executing query: {str(e)}"
+    def get_tables_and_fields(self, dbname: str) -> Dict[str, List[str]]:
+        if not self.connect(dbname):
+            return {}
+
+        tables_and_fields = {}
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute("""
+                    SELECT table_name 
+                    FROM information_schema.tables 
+                    WHERE table_schema = 'public'
+                """)
+                tables = [row[0] for row in cur.fetchall()]
+
+                for table in tables:
+                    cur.execute(f"""
+                        SELECT column_name 
+                        FROM information_schema.columns 
+                        WHERE table_schema = 'public' 
+                        AND table_name = '{table}'
+                    """)
+                    fields = [row[0] for row in cur.fetchall()]
+                    tables_and_fields[table] = fields
+
+        except psycopg2.Error as e:
+            print(f"Error fetching tables and fields: {e}")
+
+        return tables_and_fields
