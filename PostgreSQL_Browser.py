@@ -1,368 +1,201 @@
 import sys
+from PyQt6.QtWidgets import (
+    QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QLabel,
+    QLineEdit, QTextEdit, QWidget, QMenuBar, QMenu, QStatusBar,
+    QSplitter, QInputDialog, QMessageBox
+)
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QStandardItemModel, QStandardItem
-import psycopg2
+from PyQt6.QtGui import QAction
 import typer
 from typing import Optional
-from psycopg2.extensions import connection as PsycopgConnection
-from PyQt6.QtWidgets import (
-    QApplication,
-    QSplitter,
-    QMainWindow,
-    QVBoxLayout,
-    QHBoxLayout,
-    QLabel,
-    QLineEdit,
-    QTextEdit,
-    QTreeWidget,
-    QTreeWidgetItem,
-    QMessageBox,
-    QInputDialog,
-    QTableView,
-    QWidget,
-    QMenuBar,
-    QMenu,
-    QStatusBar,
-)
-from PyQt6.QtGui import QAction
+
+from database_manager import DatabaseManager
+from gui_components import DatabaseTreeWidget, TableView
 
 app = typer.Typer()
-
 
 class PostgreSQLGUI(QMainWindow):
     def __init__(self, host, port, username, password):
         super().__init__()
-        self.conn: Optional[PsycopgConnection] = None
-        self.host = host
-        self.port = port
-        self.username = username
-        self.password = password
-        self.tableView = QTableView()
+        self.db_manager = DatabaseManager(host, port, username, password)
         self.initUI()
-        self.autoConnect()
 
     def initUI(self):
         self.setWindowTitle("PostgreSQL Database Manager")
         self.setGeometry(300, 300, 800, 600)
 
-        # Create central widget and layout
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
-        mainLayout = QVBoxLayout(central_widget)
+        main_layout = QVBoxLayout(central_widget)
 
-        # Create menu bar
+        self.setup_menu_bar()
+        self.setup_connection_layout(main_layout)
+        self.setup_main_area(main_layout)
+        self.setup_status_bar()
+
+        self.list_databases()
+
+    def setup_menu_bar(self):
         menubar = self.menuBar()
-
-        # Database menu
         database_menu = menubar.addMenu("Database")
 
-        connect_action = QAction("Connect & List Databases", self)
-        connect_action.triggered.connect(self.listDatabases)
-        database_menu.addAction(connect_action)
+        actions = [
+            ("Connect & List Databases", self.list_databases),
+            ("Create New Database", self.create_database),
+            ("Delete Database", self.delete_database),
+            ("Show Database Contents", self.show_database_contents)
+        ]
 
-        create_db_action = QAction("Create New Database", self)
-        create_db_action.triggered.connect(self.createDatabase)
-        database_menu.addAction(create_db_action)
+        for action_text, action_slot in actions:
+            action = QAction(action_text, self)
+            action.triggered.connect(action_slot)
+            database_menu.addAction(action)
 
-        delete_db_action = QAction("Delete Database", self)
-        delete_db_action.triggered.connect(self.deleteDatabase)
-        database_menu.addAction(delete_db_action)
+    def setup_connection_layout(self, parent_layout):
+        connection_layout = QHBoxLayout()
+        self.host_edit = QLineEdit(self.db_manager.host)
+        self.port_edit = QLineEdit(str(self.db_manager.port))
+        self.username_edit = QLineEdit(self.db_manager.username)
+        self.password_edit = QLineEdit(self.db_manager.password)
+        self.password_edit.setEchoMode(QLineEdit.EchoMode.Password)
 
-        show_db_action = QAction("Show Database Contents", self)
-        show_db_action.triggered.connect(self.showDatabaseContents)
-        database_menu.addAction(show_db_action)
+        for label, widget in [
+            ("Host:", self.host_edit),
+            ("Port:", self.port_edit),
+            ("Username:", self.username_edit),
+            ("Password:", self.password_edit)
+        ]:
+            connection_layout.addWidget(QLabel(label))
+            connection_layout.addWidget(widget)
 
-        # Connection settings
-        connectionLayout = QHBoxLayout()
-        self.hostEdit = QLineEdit(self.host)
-        self.portEdit = QLineEdit(str(self.port))
-        self.usernameEdit = QLineEdit(self.username)
-        self.passwordEdit = QLineEdit(self.password if self.password else "")
-        self.passwordEdit.setEchoMode(QLineEdit.EchoMode.Password)
+        parent_layout.addLayout(connection_layout)
 
-        connectionLayout.addWidget(QLabel("Host:"))
-        connectionLayout.addWidget(self.hostEdit)
-        connectionLayout.addWidget(QLabel("Port:"))
-        connectionLayout.addWidget(self.portEdit)
-        connectionLayout.addWidget(QLabel("Username:"))
-        connectionLayout.addWidget(self.usernameEdit)
-        connectionLayout.addWidget(QLabel("Password:"))
-        connectionLayout.addWidget(self.passwordEdit)
-
-        # Tree Widget
-        self.dbTree = QTreeWidget()
-        self.dbTree.setHeaderLabels(["Databases and Tables"])
-        self.dbTree.itemSelectionChanged.connect(self.onTreeSelectionChanged)
-
-        # Output text area
-        self.outputTextEdit = QTextEdit()
-        self.outputTextEdit.setReadOnly(True)
-
-        # Add widgets to layout
-        mainLayout.addLayout(connectionLayout)
-        mainLayout.addWidget(QLabel("Databases and Tables:"))
+    def setup_main_area(self, parent_layout):
+        parent_layout.addWidget(QLabel("Databases and Tables:"))
 
         outer_splitter = QSplitter(Qt.Orientation.Vertical)
-
         main_splitter = QSplitter(Qt.Orientation.Horizontal)
-        main_splitter.addWidget(self.dbTree)
-        self.tableView = QTableView()
-        main_splitter.addWidget(self.tableView)
+
+        self.db_tree = DatabaseTreeWidget()
+        self.db_tree.itemSelectionChanged.connect(self.on_tree_selection_changed)
+        main_splitter.addWidget(self.db_tree)
+
+        self.table_view = TableView()
+        main_splitter.addWidget(self.table_view)
         main_splitter.setSizes([200, 600])
+
+        self.output_text_edit = QTextEdit()
+        self.output_text_edit.setReadOnly(True)
+
         outer_splitter.addWidget(main_splitter)
-        outer_splitter.addWidget(self.outputTextEdit)
+        outer_splitter.addWidget(self.output_text_edit)
         outer_splitter.setSizes([400, 200])
-        mainLayout.addWidget(outer_splitter)
 
-        # Set up status bar
-        self.statusBar = QStatusBar()
-        self.setStatusBar(self.statusBar)
-        self.statusBar.showMessage("Ready")
+        parent_layout.addWidget(outer_splitter)
 
-    def connectToDatabase(
-        self, dbname="postgres", host=None, port=None, user=None, password=None
-    ):
-        try:
-            if self.conn:
-                self.conn.close()
-            self.conn = psycopg2.connect(
-                host=host or self.hostEdit.text(),
-                port=int(port or self.portEdit.text()),
-                user=user or self.usernameEdit.text(),
-                password=password or self.passwordEdit.text(),
-                dbname=dbname,
-                sslmode="prefer",
-            )
-            self.outputTextEdit.append(f"Connected to {dbname} successfully.")
-            return True
-        except psycopg2.Error as e:
-            self.outputTextEdit.append(f"Error connecting to database: {e}")
-            print(e, file=sys.stderr)
-            return False
+    def setup_status_bar(self):
+        self.status_bar = QStatusBar()
+        self.setStatusBar(self.status_bar)
+        self.status_bar.showMessage("Ready")
 
-    def listDatabases(self):
-        if self.connectToDatabase():
-            self.outputTextEdit.append("Listing databases...")
-            self.statusBar.showMessage("Listing databases...")
-            if self.conn:
-                cur = self.conn.cursor()
-                cur.execute(
-                    "SELECT datname FROM pg_database WHERE datistemplate = false"
-                )
-                databases = cur.fetchall()
-                self.dbTree.clear()
-                for db in databases:
-                    db_item = QTreeWidgetItem(self.dbTree, [db[0]])
-                    self.listTables(db[0], db_item)
-                cur.close()
-            self.statusBar.showMessage("Databases listed")
+    def list_databases(self):
+        databases = self.db_manager.list_databases()
+        tables_dict = {db: self.db_manager.list_tables(db) for db in databases}
+        self.db_tree.populate(databases, tables_dict)
+        self.output_text_edit.append("Databases listed successfully.")
+        self.status_bar.showMessage("Databases listed")
 
-    def listTables(self, dbname, parent_item):
-        if self.connectToDatabase(dbname):
-            if self.conn:
-                cur = self.conn.cursor()
-                cur.execute(
-                    """
-                    SELECT table_name, table_type
-                    FROM information_schema.tables
-                    WHERE table_schema='public'
-                """
-                )
-                tables = cur.fetchall()
-                for table, table_type in tables:
-                    table_item = QTreeWidgetItem(
-                        parent_item, [f"{table} ({table_type})"]
-                    )
-                cur.close()
-
-    def createDatabase(self):
-        dbname, ok = QInputDialog.getText(
-            self, "Create Database", "Enter database name:"
-        )
+    def create_database(self):
+        dbname, ok = QInputDialog.getText(self, "Create Database", "Enter database name:")
         if ok and dbname:
-            try:
-                if self.connectToDatabase():
-                    if self.conn:
-                        self.conn.autocommit = True
-                        cur = self.conn.cursor()
-                        cur.execute(f'CREATE DATABASE "{dbname}"')
-                        cur.close()
-                        self.outputTextEdit.append(
-                            f"Database {dbname} created successfully."
-                        )
-                        self.listDatabases()  # Refresh the database tree
-                        self.statusBar.showMessage(
-                            f"Database {dbname} created successfully"
-                        )
-            except psycopg2.Error as e:
-                self.outputTextEdit.append(f"Error creating database: {e}")
-                self.statusBar.showMessage("Error creating database")
-
-    def deleteDatabase(self):
-        selected_item = self.dbTree.currentItem()
-        if (
-            selected_item and selected_item.parent() is None
-        ):  # Check if it's a top-level item (database)
-            dbname = selected_item.text(0)
-            reply = QMessageBox.question(
-                self,
-                "Delete Database",
-                f"Are you sure you want to delete database '{dbname}'?",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                QMessageBox.StandardButton.No,
-            )
-            if reply == QMessageBox.StandardButton.Yes:
-                try:
-                    if self.connectToDatabase():
-                        if self.conn:
-                            self.conn.autocommit = True
-                            cur = self.conn.cursor()
-                            cur.execute(f'DROP DATABASE IF EXISTS "{dbname}"')
-                            cur.close()
-                            self.outputTextEdit.append(
-                                f"Database {dbname} deleted successfully."
-                            )
-                            self.listDatabases()  # Refresh the database tree
-                            self.statusBar.showMessage(
-                                f"Database {dbname} deleted successfully"
-                            )
-                except psycopg2.Error as e:
-                    self.outputTextEdit.append(f"Error deleting database: {e}")
-                    self.statusBar.showMessage("Error deleting database")
+            if self.db_manager.create_database(dbname):
+                self.output_text_edit.append(f"Database {dbname} created successfully.")
+                self.list_databases()
+                self.status_bar.showMessage(f"Database {dbname} created successfully")
             else:
-                self.outputTextEdit.append(
-                    f"Deletion of database '{dbname}' cancelled."
-                )
-                self.statusBar.showMessage("Database deletion cancelled")
-        else:
-            self.outputTextEdit.append("No database selected.")
-            self.statusBar.showMessage("No database selected for deletion")
+                self.output_text_edit.append(f"Error creating database {dbname}.")
+                self.status_bar.showMessage("Error creating database")
 
-    def showDatabaseContents(self):
-        selected_item = self.dbTree.currentItem()
+    def delete_database(self):
+        selected_item = self.db_tree.currentItem()
+        if selected_item and selected_item.parent() is None:
+            dbname = selected_item.text(0)
+            reply = QMessageBox.question(self, "Delete Database",
+                                         f"Are you sure you want to delete database '{dbname}'?",
+                                         QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                                         QMessageBox.StandardButton.No)
+            if reply == QMessageBox.StandardButton.Yes:
+                if self.db_manager.delete_database(dbname):
+                    self.output_text_edit.append(f"Database {dbname} deleted successfully.")
+                    self.list_databases()
+                    self.status_bar.showMessage(f"Database {dbname} deleted successfully")
+                else:
+                    self.output_text_edit.append(f"Error deleting database {dbname}.")
+                    self.status_bar.showMessage("Error deleting database")
+            else:
+                self.output_text_edit.append(f"Deletion of database '{dbname}' cancelled.")
+                self.status_bar.showMessage("Database deletion cancelled")
+        else:
+            self.output_text_edit.append("No database selected.")
+            self.status_bar.showMessage("No database selected for deletion")
+
+    def show_database_contents(self):
+        selected_item = self.db_tree.currentItem()
         if selected_item:
-            if selected_item.parent() is None:  # Database node
+            if selected_item.parent() is None:
                 dbname = selected_item.text(0)
-                self.statusBar.showMessage(f"Showing contents of database {dbname}")
-            else:  # Table node
+                self.status_bar.showMessage(f"Showing contents of database {dbname}")
+            else:
                 parent_item = selected_item.parent()
                 if parent_item:
-                    table_name = selected_item.text(0).split(" ")[
-                        0
-                    ]  # Remove the (table_type) part
-                    self.statusBar.showMessage(
-                        f"Showing contents of table {table_name}"
-                    )
+                    dbname = parent_item.text(0)
+                    table_name = selected_item.text(0).split(" ")[0]
+                    self.show_table_contents(dbname, table_name)
         else:
-            self.statusBar.showMessage("No item selected")
+            self.status_bar.showMessage("No item selected")
 
-    def onTreeSelectionChanged(self):
-        selected_items = self.dbTree.selectedItems()
+    def on_tree_selection_changed(self):
+        selected_items = self.db_tree.selectedItems()
         if selected_items:
             current_item = selected_items[0]
-            self.onTreeItemChanged(current_item, None)
-
-    def onTreeItemChanged(self, current, previous):
-        if current:
-            if current.parent() is None:  # Database node
-                dbname = current.text(0)
-                self.outputTextEdit.clear()
-                self.outputTextEdit.append(f"Contents of database {dbname}:")
-                self.tableView.setModel(None)  # Clear the table view
-                self.statusBar.showMessage(f"Selected database: {dbname}")
-            else:  # Table node
-                parent_item = current.parent()
+            if current_item.parent() is None:
+                dbname = current_item.text(0)
+                self.output_text_edit.clear()
+                self.output_text_edit.append(f"Contents of database {dbname}:")
+                self.table_view.setModel(None)
+                self.status_bar.showMessage(f"Selected database: {dbname}")
+            else:
+                parent_item = current_item.parent()
                 if parent_item:
                     dbname = parent_item.text(0)
-                    table_name = current.text(0).split(" ")[0]  # Remove the (table_type) part
-                    self.showTableContents(dbname, table_name)
-                    self.updateTableView(dbname, table_name)
-                    self.statusBar.showMessage(f"Showing contents of table {table_name}")
+                    table_name = current_item.text(0).split(" ")[0]
+                    self.show_table_contents(dbname, table_name)
 
-    def showTableContents(self, dbname, table_name):
-        try:
-            if self.connectToDatabase(dbname):
-                if self.conn:
-                    cur = self.conn.cursor()
-                    cur.execute(
-                        f'SELECT * FROM "{table_name}" LIMIT 5'
-                    )  # Use quoted identifier
-                    rows = cur.fetchall()
-                    self.outputTextEdit.clear()
-                    self.outputTextEdit.append(
-                        f"Contents of {table_name} (first 5 rows):"
-                    )
-                    for row in rows:
-                        self.outputTextEdit.append(f"  - {row}")
-                    cur.close()
-        except psycopg2.Error as e:
-            self.outputTextEdit.append(f"Error showing table contents: {e}")
-
-    def autoConnect(self):
-        if self.connectToDatabase(
-            host=self.host, port=self.port, user=self.username, password=self.password
-        ):
-            self.listDatabases()
-            self.statusBar.showMessage("Connected successfully")
+    def show_table_contents(self, dbname, table_name):
+        col_names, rows = self.db_manager.get_table_contents(dbname, table_name)
+        if col_names and rows:
+            self.table_view.update_content(col_names, rows)
+            self.output_text_edit.clear()
+            self.output_text_edit.append(f"Contents of {table_name} (first 5 rows):")
+            for row in rows[:5]:
+                self.output_text_edit.append(f"  - {row}")
+            self.status_bar.showMessage(f"Showing contents of table {table_name}")
         else:
-            self.showErrorDialog(
-                "Connection Failed",
-                "Failed to connect to the database. Please check your connection settings.",
-            )
-            self.statusBar.showMessage("Connection failed")
-
-    def showErrorDialog(self, title, message):
-        QMessageBox.critical(self, title, message)
-
-    def updateTableView(self, dbname, table_name):
-        try:
-            if self.connectToDatabase(dbname):
-                if self.conn:
-                    cur = self.conn.cursor()
-                    cur.execute(
-                        f'SELECT * FROM "{table_name}" LIMIT 1000'
-                    )  # Use quoted identifier
-                    rows = cur.fetchall()
-
-                    # Get column names
-                    col_names = [desc[0] for desc in cur.description]
-
-                    # Create model
-                    model = QStandardItemModel()
-                    model.setHorizontalHeaderLabels(col_names)
-
-                    # Populate model with data
-                    for row in rows:
-                        items = [QStandardItem(str(item)) for item in row]
-                        model.appendRow(items)
-
-                    # Set model to table view
-                    self.tableView.setModel(model)
-                    self.tableView.setSortingEnabled(True)
-                    self.tableView.resizeColumnsToContents()
-
-                    cur.close()
-                    self.statusBar.showMessage(f"Showing table: {table_name}")
-        except psycopg2.Error as e:
-            self.outputTextEdit.append(f"Error updating table view: {e}")
-            self.statusBar.showMessage(f"Error updating table view: {table_name}")
-            self.tableView.setModel(None)  # Clear the table view on error
-
+            self.output_text_edit.append(f"Error fetching contents of table {table_name}")
+            self.status_bar.showMessage(f"Error showing table contents: {table_name}")
+            self.table_view.setModel(None)
 
 @app.command()
 def main(
     host: str = typer.Option("localhost", help="Database host"),
     port: int = typer.Option(5432, help="Database port"),
     username: str = typer.Option("postgres", help="Database username"),
-    password: Optional[str] = typer.Option(
-        None, help="Database password", prompt=False
-    ),
+    password: Optional[str] = typer.Option(None, help="Database password", prompt=True, hide_input=True),
 ):
     app = QApplication(sys.argv)
     gui = PostgreSQLGUI(host, port, username, password)
     gui.show()
     sys.exit(app.exec())
-
 
 if __name__ == "__main__":
     app()
