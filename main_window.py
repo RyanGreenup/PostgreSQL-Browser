@@ -1,7 +1,7 @@
 from PyQt6.QtWidgets import (
     QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QMenuBar, QStatusBar, QSplitter, QInputDialog, QMessageBox, QTextEdit
 )
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QSettings
 from PyQt6.QtGui import QAction
 
 from database_manager import DatabaseManager
@@ -12,7 +12,9 @@ class MainWindow(QMainWindow):
     def __init__(self, host, port, username, password):
         super().__init__()
         self.db_manager = DatabaseManager(host, port, username, password)
+        self.settings = QSettings("YourCompany", "PostgreSQLBrowser")
         self.initUI()
+        self.load_connection_settings()
 
     def initUI(self):
         self.setWindowTitle("PostgreSQL Database Manager")
@@ -32,6 +34,7 @@ class MainWindow(QMainWindow):
     def setup_menu_bar(self):
         menubar = self.menuBar()
         database_menu = menubar.addMenu("Database")
+        settings_menu = menubar.addMenu("Settings")
 
         actions = [
             ("Connect & List Databases", self.list_databases),
@@ -46,6 +49,10 @@ class MainWindow(QMainWindow):
             action.triggered.connect(action_slot)
             database_menu.addAction(action)
 
+        save_settings_action = QAction("Save Connection Settings", self)
+        save_settings_action.triggered.connect(self.save_connection_settings)
+        settings_menu.addAction(save_settings_action)
+
     def setup_connection_widget(self, parent_layout):
         self.connection_widget = ConnectionWidget(self.db_manager)
         parent_layout.addWidget(self.connection_widget)
@@ -58,8 +65,19 @@ class MainWindow(QMainWindow):
         self.db_tree.itemSelectionChanged.connect(self.on_tree_selection_changed)
         main_splitter.addWidget(self.db_tree)
 
+        right_side = QSplitter(Qt.Orientation.Vertical)
         self.table_view = TableView()
-        main_splitter.addWidget(self.table_view)
+        right_side.addWidget(self.table_view)
+
+        self.query_edit = QTextEdit()
+        self.query_edit.setPlaceholderText("Enter your SQL query here...")
+        right_side.addWidget(self.query_edit)
+
+        execute_query_button = QPushButton("Execute Query")
+        execute_query_button.clicked.connect(self.execute_custom_query)
+        right_side.addWidget(execute_query_button)
+
+        main_splitter.addWidget(right_side)
         main_splitter.setSizes([200, 600])
 
         self.output_text_edit = QTextEdit()
@@ -79,11 +97,15 @@ class MainWindow(QMainWindow):
     def list_databases(self):
         connection_info = self.connection_widget.get_connection_info()
         self.db_manager.update_connection(**connection_info)
-        databases = self.db_manager.list_databases()
-        tables_dict = {db: self.db_manager.list_tables(db) for db in databases}
-        self.db_tree.populate(databases, tables_dict)
-        self.output_text_edit.append("Databases listed successfully.")
-        self.status_bar.showMessage("Databases listed")
+        try:
+            databases = self.db_manager.list_databases()
+            tables_dict = {db: self.db_manager.list_tables(db) for db in databases}
+            self.db_tree.populate(databases, tables_dict)
+            self.output_text_edit.append("Databases listed successfully.")
+            self.status_bar.showMessage("Databases listed")
+        except Exception as e:
+            self.output_text_edit.append(f"Error listing databases: {str(e)}")
+            self.status_bar.showMessage("Error listing databases")
 
     def create_database(self):
         dbname, ok = QInputDialog.getText(
@@ -188,3 +210,37 @@ class MainWindow(QMainWindow):
         self.list_databases()
         self.output_text_edit.append("Database list refreshed.")
         self.status_bar.showMessage("Database list refreshed")
+
+    def execute_custom_query(self):
+        query = self.query_edit.toPlainText()
+        selected_item = self.db_tree.currentItem()
+        if selected_item and selected_item.parent() is None:
+            dbname = selected_item.text(0)
+            try:
+                result = self.db_manager.execute_custom_query(dbname, query)
+                self.output_text_edit.append(f"Query executed successfully:\n{result}")
+                self.status_bar.showMessage("Query executed successfully")
+            except Exception as e:
+                self.output_text_edit.append(f"Error executing query: {str(e)}")
+                self.status_bar.showMessage("Error executing query")
+        else:
+            self.output_text_edit.append("Please select a database before executing a query.")
+            self.status_bar.showMessage("No database selected")
+
+    def save_connection_settings(self):
+        connection_info = self.connection_widget.get_connection_info()
+        for key, value in connection_info.items():
+            self.settings.setValue(key, value)
+        self.output_text_edit.append("Connection settings saved.")
+        self.status_bar.showMessage("Connection settings saved")
+
+    def load_connection_settings(self):
+        host = self.settings.value("host", self.db_manager.host)
+        port = int(self.settings.value("port", self.db_manager.port))
+        username = self.settings.value("username", self.db_manager.username)
+        password = self.settings.value("password", self.db_manager.password)
+        
+        self.connection_widget.host_edit.setText(host)
+        self.connection_widget.port_edit.setText(str(port))
+        self.connection_widget.username_edit.setText(username)
+        self.connection_widget.password_edit.setText(password)

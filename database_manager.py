@@ -127,3 +127,24 @@ class DatabaseManager:
         except psycopg2.Error as e:
             print(f"Error fetching table contents: {e}")
             return [], [], False
+
+    def execute_custom_query(self, dbname: str, query: str) -> str:
+        if not self.connect(dbname):
+            return "Error: Unable to connect to the database."
+
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute(query)
+                if cur.description:
+                    columns = [desc[0] for desc in cur.description]
+                    rows = cur.fetchall()
+                    result = "Columns: " + ", ".join(columns) + "\n"
+                    for row in rows:
+                        result += str(row) + "\n"
+                else:
+                    result = f"Query executed successfully. Rows affected: {cur.rowcount}"
+                self.conn.commit()
+                return result
+        except psycopg2.Error as e:
+            self.conn.rollback()
+            return f"Error executing query: {str(e)}"
