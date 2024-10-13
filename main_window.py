@@ -99,9 +99,6 @@ class MainWindow(QMainWindow):
         self.db_tree.itemSelectionChanged.connect(self.on_tree_selection_changed)
         left_side.addWidget(self.db_tree)
 
-        self.db_tree_display = DBTreeDisplay()
-        left_side.addWidget(self.db_tree_display)
-
         main_splitter.addWidget(left_side)
 
         right_side = QSplitter(Qt.Orientation.Vertical)
@@ -157,7 +154,7 @@ class MainWindow(QMainWindow):
             self.output_text_edit.clear()
             self.output_text_edit.append(f"Selected database: {database}")
             self.status_bar.showMessage(f"Selected database: {database}")
-            
+
             # Update the tree view to highlight the selected database
             root = self.db_tree.invisibleRootItem()
             for i in range(root.childCount()):
@@ -276,11 +273,11 @@ class MainWindow(QMainWindow):
     def execute_custom_query(self):
         query = self.query_edit.toPlainText()
         selected_database = self.db_chooser.currentText()
-        
+
         if selected_database:
             try:
                 result = self.db_manager.execute_custom_query(selected_database, query)
-                
+
                 # Check if the result is a tuple (indicating a SELECT query)
                 if isinstance(result, tuple) and len(result) == 2:
                     col_names, rows = result
@@ -305,7 +302,7 @@ class MainWindow(QMainWindow):
                         f"Query executed successfully:\n{result}"
                     )
                 self.status_bar.showMessage("Query executed successfully")
-                
+
                 # Update the DBTreeDisplay after executing the query
                 self.update_db_tree_display(selected_database)
             except Exception as e:
@@ -337,8 +334,6 @@ class MainWindow(QMainWindow):
         self.connection_widget.username_edit.setText(username)
         self.connection_widget.password_edit.setText(password)
 
-
-QTreeWidget
 
 
 class DBTreeDisplay(QTreeWidget):
