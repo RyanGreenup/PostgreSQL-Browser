@@ -7,6 +7,7 @@ A PostgreSQL Browser, similar to SQLiteBrowser with far less features (for now).
 ## Installation
 
 ```python
+# Append --force to update
 pipx install "git+https://github.com/RyanGreenup/PostgreSQL-Browser"
 ```
 
