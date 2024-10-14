@@ -50,6 +50,9 @@ class SQLQueryEditor(QTextEdit):
         super().__init__(parent)
         self.setPlaceholderText("Enter your SQL query here...")
 
+    def set_default_query(self, database: str) -> None:
+        self.setText(f"SELECT * FROM information_schema.tables WHERE table_schema = 'public' AND table_catalog = '{database}';")
+
 
 class SQLQuery(QWidget):
     def __init__(
@@ -88,6 +91,7 @@ class SQLQuery(QWidget):
     def on_database_changed(self, database: str) -> None:
         self.current_database = database
         self.update_db_tree_display(database)
+        self.query_edit.set_default_query(database)
 
     def initUI(self) -> None:
         splitter = QSplitter()
