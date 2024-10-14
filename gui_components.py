@@ -33,10 +33,11 @@ class DBFieldsView(QTreeWidget):
 
     def populate(self, tables: dict[str, list[Field]]):
         self.clear()
-        for table, (field, field_type) in tables.items():
+        for table, fields in tables.items():
             table_item = QTreeWidgetItem(self, [table])
             try:
-                QTreeWidgetItem(table_item, [f"{field} ({field_type})"])
+                for field in fields:
+                    QTreeWidgetItem(table_item, [f"{field.name} ({field.type})"])
             except Exception as e:
                 print(e)
 
