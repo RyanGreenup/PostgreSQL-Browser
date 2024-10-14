@@ -1,17 +1,18 @@
-from PyQt6.QtWidgets import QTreeWidget, QTreeWidgetItem, QTableView
+from typing import List, Dict, Tuple, Any
+from PyQt6.QtWidgets import QTreeWidget, QTreeWidgetItem, QTableView, QWidget
 from PyQt6.QtGui import QStandardItemModel, QStandardItem
 from database_manager import DatabaseManager
 from data_types import Field
 
 
 class DBTablesTree(QTreeWidget):
-    def __init__(self, parent=None):
+    def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setHeaderLabels(["Databases and Tables"])
 
     def populate(
-        self, databases: list[str], tables_dict: dict[str, list[tuple[str, str]]]
-    ):
+        self, databases: List[str], tables_dict: Dict[str, List[Tuple[str, str]]]
+    ) -> None:
         self.clear()
         for db in databases:
             db_item = QTreeWidgetItem(self, [db])
@@ -23,7 +24,7 @@ class DBTablesTree(QTreeWidget):
 
 
 class DBFieldsView(QTreeWidget):
-    def __init__(self, parent=None, db_manager: DatabaseManager | None = None):
+    def __init__(self, parent: QWidget | None = None, db_manager: DatabaseManager | None = None) -> None:
         super().__init__(parent)
         self.setHeaderLabels(["Database Fields"])
         if db_manager is None:
@@ -31,7 +32,7 @@ class DBFieldsView(QTreeWidget):
 
         self.db_manager = db_manager
 
-    def populate(self, tables: dict[str, list[Field]]):
+    def populate(self, tables: Dict[str, List[Field]]) -> None:
         self.clear()
         for table, fields in tables.items():
             table_item = QTreeWidgetItem(self, [table])
@@ -41,7 +42,7 @@ class DBFieldsView(QTreeWidget):
             except Exception as e:
                 print(e)
 
-    def get_tables_and_fields(self) -> dict[str, list[tuple[str, str]]]:
+    def get_tables_and_fields(self) -> Dict[str, List[Tuple[str, str]]]:
         """
         A callback function that returns the tables and fields from the selected item
         """
@@ -57,12 +58,12 @@ class DBFieldsView(QTreeWidget):
                         tables[table_name] = fields
         return tables
 
-    def on_item_clicked(self, item):
+    def on_item_clicked(self, item: QTreeWidgetItem) -> None:
         table_name = self.get_table_name(item)
         fields = self.get_tables_and_fields()
         self.populate(fields)
 
-    def get_table_name(self, item) -> str:
+    def get_table_name(self, item: QTreeWidgetItem) -> str:
         """
         A callback function that returns the table name from the selected item
         """
@@ -70,11 +71,11 @@ class DBFieldsView(QTreeWidget):
 
 
 class TableView(QTableView):
-    def __init__(self, parent=None):
+    def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setSortingEnabled(True)
 
-    def update_content(self, col_names, rows):
+    def update_content(self, col_names: List[str], rows: List[List[Any]]) -> None:
         model = QStandardItemModel()
         model.setHorizontalHeaderLabels(col_names)
 
