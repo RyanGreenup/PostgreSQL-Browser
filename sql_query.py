@@ -74,7 +74,9 @@ class SQLQuery(QWidget):
             status_bar=self.status_bar,
             text_changed_callbacks=on_db_choice_callbacks,
         )
-        self.db_chooser.populate()  # T
+        if self.db_chooser.populate():  # If databases were loaded successfully
+            self.db_chooser.setCurrentIndex(0)  # Select the first item
+            self.update_db_tree_display(self.db_chooser.currentText())  # Update the tree display
 
         # Connect the Combobox to the tree
         self.db_chooser.currentTextChanged.connect(self.update_db_tree_display)
@@ -148,10 +150,12 @@ class DBChooser(QComboBox):
         if not logged:
             print(message, file=sys.stderr)
 
-    def populate(self) -> None:
+    def populate(self) -> bool:
         self.clear()
         try:
             databases = self.db_manager.list_databases()
             self.addItems(databases)
+            return len(databases) > 0
         except Exception as e:
             self.log(f"Error listing databases: {str(e)}")
+            return False
