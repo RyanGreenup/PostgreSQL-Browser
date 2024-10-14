@@ -204,14 +204,10 @@ class MainWindow(QMainWindow):
         try:
             if selected_database:
                 # Get tables and fields for the selected database
-                tables_and_fields = self.db_manager.get_tables_and_fields(
-                    selected_database
-                )
+                tables_and_fields = self.db_manager.get_tables_and_fields(selected_database)
 
                 # Populate the tree with the selected database and its tables/fields
-                self.db_tree.populate(
-                    [selected_database], {selected_database: tables_and_fields}
-                )
+                self.db_tree.populate([selected_database], {selected_database: [(table, "") for table in tables_and_fields.keys()]})
 
                 # Expand the selected database
                 root = self.db_tree.invisibleRootItem()
@@ -221,9 +217,7 @@ class MainWindow(QMainWindow):
             else:
                 # If no database is selected, show all databases
                 databases = self.db_manager.list_databases()
-                tables_dict = {
-                    db: self.db_manager.get_tables_and_fields(db) for db in databases
-                }
+                tables_dict = {db: [(table, "") for table in self.db_manager.get_tables_and_fields(db).keys()] for db in databases}
                 self.db_tree.populate(databases, tables_dict)
 
             self.output_text_edit.append("Database tree updated")
