@@ -23,6 +23,22 @@ class DBTablesTree(QTreeWidget):
             except Exception as e:
                 print(e)
 
+    def get_selected_item(self) -> str | None:
+        """
+        A callback function that returns the selected database
+        """
+        if item := self.currentItem():
+            return item.text(0)
+        return None
+
+    def get_selected_table(self) -> str | None:
+        """
+        A callback function that returns the selected table
+        """
+        if item := self.currentItem():
+            return item.text(0).split()[0]
+        return None
+
 
 class DBFieldsView(QTreeWidget):
     def __init__(

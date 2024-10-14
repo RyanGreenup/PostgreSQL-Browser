@@ -1,4 +1,5 @@
 from __future__ import annotations
+from search_bar import SearchWidget
 from warning_types import TreeWarning, issue_warning
 import traceback
 from sql_query import SQLQuery
@@ -95,7 +96,8 @@ class MainWindow(QMainWindow):
 
         right_side = QSplitter(Qt.Orientation.Vertical)
         self.table_view = TableView()
-        right_side.addWidget(self.table_view)
+        self.search_bar = SearchWidget(self.db_manager, self.db_tree, self.table_view)
+        self.setup_table_view_with_search(right_side)
 
         # Create output_text_edit before using it
         self.output_text_edit = QTextEdit()
@@ -117,6 +119,15 @@ class MainWindow(QMainWindow):
         outer_splitter.setSizes([400, 100])
 
         parent_layout.addWidget(outer_splitter)
+
+    def setup_table_view_with_search(self, parent_splitter: QSplitter) -> None:
+        """Instead of setting a layout on a splitter, add the widget directly."""
+        container_widget = QWidget()
+        layout = QVBoxLayout(container_widget)
+        layout.addWidget(self.search_bar)
+        layout.addWidget(self.table_view)
+        # Set the container widget to the parent splitter
+        parent_splitter.addWidget(container_widget)
 
     def setup_status_bar(self) -> None:
         self.status_bar = QStatusBar()
@@ -291,9 +302,7 @@ class MainWindow(QMainWindow):
                     self.show_table_contents(dbname, table_name)
 
     def show_table_contents(self, dbname: str, table_name: str) -> None:
-        col_names, rows, success = self.db_manager.get_table_contents(
-            dbname, table_name
-        )
+        col_names, rows, success = self.db_manager.get_table_contents( dbname, table_name)
         if success:
             self.table_view.update_content(col_names, rows)
             self.output_text_edit.clear()

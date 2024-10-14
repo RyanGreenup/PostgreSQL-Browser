@@ -22,6 +22,7 @@ class DatabaseManager:
         self.username = username
         self.password = password
         self.conn: Optional[PsycopgConnection] = None
+        self.current_database: str | None = None
 
     def update_connection(
         self, host: str, port: int, username: str, password: str
@@ -44,6 +45,7 @@ class DatabaseManager:
                 dbname=dbname,
                 sslmode="prefer",
             )
+            self.current_database = dbname
             return True
         except psycopg2.Error as e:
             unable_to_connect_to_database(e)
@@ -178,15 +180,15 @@ class DatabaseManager:
         return [row[0] for row in cur.fetchall()]
 
     def execute_custom_query(
-        self, dbname: str, query: str
+            self, dbname: str, query: str, params: Tuple[str, ...] | None = None
     ) -> Union[str, Tuple[List[str], List[Tuple[Any, ...]]]]:
         if not self.connect(dbname):
-            return "Error: Unable to connect to the database."
+            issue_warning("Unable to get database connection", ConnectionWarning)
 
         if conn := self.conn:
             try:
                 with conn.cursor() as cur:
-                    cur.execute(query)
+                    cur.execute(query, params)
                     if cur.description:
                         columns = [desc[0] for desc in cur.description]
                         rows = cur.fetchall()
