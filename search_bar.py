@@ -20,9 +20,7 @@ class SearchWidget(QWidget):
         layout = QHBoxLayout()
         self.search_bar = QLineEdit()
         self.search_bar.setPlaceholderText("Search for a term")
-        self.search_bar.textEdited.connect(
-            self.search_db
-        )  # Changed from textChanged to textEdited
+        self.search_bar.textChanged.connect(self.search_db)
         # TODO map this to CTL+SPACE
         self.search_bar.returnPressed.connect(self.select_nothing)
 
@@ -74,33 +72,27 @@ class SearchWidget(QWidget):
         table = self.db_tree.get_selected_table()
 
         if not table:
-            issue_warning("No table selected", DatabaseWarning)
-            return
+            return  # Don't issue a warning, just return silently
 
         if not field:
-            issue_warning("No field selected", DatabaseWarning)
-            return
-
-        if not search_term:
-            # If search term is empty, fetch all rows
-            query = f"SELECT * FROM {table};"
-            params = None
-        else:
-            query = f"""
-            SELECT * FROM {table}
-            WHERE {field} ILIKE %s;
-            """
-            params = (f"%{search_term}%",)
+            return  # Don't issue a warning, just return silently
 
         if database := self.db_manager.current_database:
-            result = self.db_manager.execute_custom_query(
-                database, query, params=params
-            )
-            if result is not None:
-                # Convert string result to list of lists
-                if isinstance(result, str):
-                    result = [row.split(",") for row in result.strip().split("\n")]
-                self.search_performed.emit(table, result)
+            if not search_term:
+                # If search term is empty, fetch all rows
+                query = f'SELECT * FROM "{table}";'
+                params = None
+            else:
+                query = f"""
+                SELECT * FROM "{table}"
+                WHERE "{field}" ILIKE %s;
+                """
+                params = (f"%{search_term}%",)
+
+            result = self.db_manager.execute_custom_query(database, query, params=params)
+            if isinstance(result, tuple) and len(result) == 2:
+                columns, rows = result
+                self.search_performed.emit(table, (columns, rows))
         else:
             issue_warning("No database selected", DatabaseWarning)
 
