@@ -1,7 +1,7 @@
 import sys
 from PyQt6.QtWidgets import QApplication
 import typer
-from typing import Optional
+from typing import Optional, Any
 
 from main_window import MainWindow
 
@@ -16,7 +16,7 @@ def main(
     password: Optional[str] = typer.Option(
         None, help="Database password", prompt=True, hide_input=True
     ),
-):
+) -> None:
     qt_app = QApplication(sys.argv)
     main_window = MainWindow(host, port, username, password)
     main_window.show()
