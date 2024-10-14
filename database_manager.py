@@ -86,6 +86,8 @@ class DatabaseManager:
     def get_table_contents(
         self, dbname: str, table_name: str, limit: int = 1000
     ) -> Tuple[List[str], List[Tuple], bool]:
+
+        print(table_name)
         if not self.connect(dbname):
             return [], [], False
 
@@ -95,8 +97,8 @@ class DatabaseManager:
                 cur.execute(
                     """
                     SELECT EXISTS (
-                        SELECT FROM information_schema.tables 
-                        WHERE table_schema = 'public' 
+                        SELECT FROM information_schema.tables
+                        WHERE table_schema = 'public'
                         AND table_name = %s
                     )
                 """,
@@ -110,9 +112,9 @@ class DatabaseManager:
                 # Get column names
                 cur.execute(
                     f"""
-                    SELECT column_name 
-                    FROM information_schema.columns 
-                    WHERE table_schema = 'public' 
+                    SELECT column_name
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
                     AND table_name = %s
                 """,
                     (table_name,),
@@ -120,7 +122,7 @@ class DatabaseManager:
                 col_names = [row[0] for row in cur.fetchall()]
 
                 # Get table contents
-                cur.execute(f'SELECT * FROM "{table_name}" LIMIT {limit}')
+                cur.execute(f'SELECT * FROM "%s" LIMIT %s', (table_name, limit))
                 rows = cur.fetchall()
 
                 return col_names, rows, True
@@ -136,6 +138,7 @@ class DatabaseManager:
 
         try:
             with self.conn.cursor() as cur:
+                print(query)
                 cur.execute(query)
                 if cur.description:
                     columns = [desc[0] for desc in cur.description]
@@ -150,6 +153,7 @@ class DatabaseManager:
                     return result
         except psycopg2.Error as e:
             self.conn.rollback()
+            self.exit(1)
             return f"Error executing query: {str(e)}"
     def get_tables_and_fields(self, dbname: str) -> Dict[str, List[str]]:
         if not self.connect(dbname):
@@ -159,19 +163,24 @@ class DatabaseManager:
         try:
             with self.conn.cursor() as cur:
                 cur.execute("""
-                    SELECT table_name 
-                    FROM information_schema.tables 
+                    SELECT table_name
+                    FROM information_schema.tables
                     WHERE table_schema = 'public'
                 """)
                 tables = [row[0] for row in cur.fetchall()]
 
                 for table in tables:
-                    cur.execute(f"""
-                        SELECT column_name 
-                        FROM information_schema.columns 
-                        WHERE table_schema = 'public' 
-                        AND table_name = '{table}'
-                    """)
+                    # Assume `cur` is your database cursor
+                    cur.execute(
+                        """
+                        SELECT column_name
+                        FROM information_schema.columns
+                        WHERE table_schema = %s
+                        AND table_name = %s
+                        """,
+                        ('public', table)
+                    )
+
                     fields = [row[0] for row in cur.fetchall()]
                     tables_and_fields[table] = fields
 

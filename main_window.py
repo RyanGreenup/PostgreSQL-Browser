@@ -151,7 +151,7 @@ class MainWindow(QMainWindow):
             on_db_choice_callback=self.update_db_tree_display,
             output=self.output_text_edit,
             status_bar=self.status_bar,
-            on_db_choice_callbacks=[self.on_database_selected]
+            on_db_choice_callbacks=[self.on_database_selected],
         )
         right_side.addWidget(self.query_edit)
 
@@ -201,11 +201,15 @@ class MainWindow(QMainWindow):
         try:
             if selected_database:
                 # Get tables and fields for the selected database
-                tables_and_fields = self.db_manager.get_tables_and_fields(selected_database)
-                
+                tables_and_fields = self.db_manager.get_tables_and_fields(
+                    selected_database
+                )
+
                 # Populate the tree with the selected database and its tables/fields
-                self.db_tree.populate([selected_database], {selected_database: tables_and_fields})
-                
+                self.db_tree.populate(
+                    [selected_database], {selected_database: tables_and_fields}
+                )
+
                 # Expand the selected database
                 root = self.db_tree.invisibleRootItem()
                 if root.childCount() > 0:
@@ -214,9 +218,11 @@ class MainWindow(QMainWindow):
             else:
                 # If no database is selected, show all databases
                 databases = self.db_manager.list_databases()
-                tables_dict = {db: self.db_manager.get_tables_and_fields(db) for db in databases}
+                tables_dict = {
+                    db: self.db_manager.get_tables_and_fields(db) for db in databases
+                }
                 self.db_tree.populate(databases, tables_dict)
-            
+
             self.output_text_edit.append("Database tree updated")
             self.status_bar.showMessage("Database tree updated")
         except Exception as e:
@@ -460,14 +466,14 @@ class SQLQuery(QWidget):
         self.query_edit = SQLQueryEditor()
         self.status_bar = status_bar
 
-
-
         # DB Chooser
         self.db_chooser = DBChooser(
             db_manager=self.db_manager,
             output=self.output,
             status_bar=self.status_bar,
-            text_changed_callback=[self.update_db_tree_display].extend(on_db_choice_callbacks),
+            text_changed_callback=[self.update_db_tree_display].extend(
+                on_db_choice_callbacks
+            ),
         )
         self.db_chooser.populate()  # TODO try removing this
         if on_db_choice_callback:
