@@ -73,14 +73,14 @@ class DBChooser(QComboBox):
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, host, port, username, password):
+    def __init__(self, host: str, port: int, username: str, password: str) -> None:
         super().__init__()
         self.db_manager = DatabaseManager(host, port, username, password)
         self.settings = QSettings("YourCompany", "PostgreSQLBrowser")
         self.initUI()
         self.load_connection_settings()
 
-    def initUI(self):
+    def initUI(self) -> None:
         self.setWindowTitle("PostgreSQL Database Manager")
         self.setGeometry(300, 300, 800, 600)
 
@@ -95,7 +95,7 @@ class MainWindow(QMainWindow):
 
         self.list_databases()
 
-    def setup_menu_bar(self):
+    def setup_menu_bar(self) -> None:
         menubar = self.menuBar()
         database_menu = menubar.addMenu("Database")
         settings_menu = menubar.addMenu("Settings")
@@ -123,11 +123,11 @@ class MainWindow(QMainWindow):
         execute_query_action.setShortcut("Ctrl+Return")  # Set the shortcut
         query_menu.addAction(execute_query_action)
 
-    def setup_connection_widget(self, parent_layout):
+    def setup_connection_widget(self, parent_layout: QVBoxLayout) -> None:
         self.connection_widget = ConnectionWidget(self.db_manager)
         parent_layout.addWidget(self.connection_widget)
 
-    def setup_main_area(self, parent_layout):
+    def setup_main_area(self, parent_layout: QVBoxLayout) -> None:
         outer_splitter = QSplitter(Qt.Orientation.Vertical)
         main_splitter = QSplitter(Qt.Orientation.Horizontal)
 
@@ -146,8 +146,6 @@ class MainWindow(QMainWindow):
         self.output_text_edit = QTextEdit()
         self.output_text_edit.setReadOnly(True)
 
-        # self.update_db_tree_display
-        #
         self.query_edit = SQLQuery(
             db_manager=self.db_manager,
             on_db_choice_callbacks=[],
@@ -165,22 +163,12 @@ class MainWindow(QMainWindow):
 
         parent_layout.addWidget(outer_splitter)
 
-        # # Add the DBChooser
-        # self.db_chooser = DBChooser(
-        #     db_manager=self.db_manager,
-        #     output=self.output_text_edit,
-        #     status_bar=self.status_bar,
-        #     text_changed_callback = self.update_db_tree_display
-        # )
-        # self.db_chooser.populate()  # TODO try removing this
-        # parent_layout.addWidget(self.db_chooser)
-
-    def setup_status_bar(self):
+    def setup_status_bar(self) -> None:
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
         self.status_bar.showMessage("Ready")
 
-    def list_databases(self):
+    def list_databases(self) -> None:
         connection_info = self.connection_widget.get_connection_info()
         self.db_manager.update_connection(**connection_info)
         try:
@@ -198,7 +186,7 @@ class MainWindow(QMainWindow):
             self.output_text_edit.append(f"Error listing databases: {str(e)}")
             self.status_bar.showMessage("Error listing databases")
 
-    def update_db_tree_display(self, selected_database: str | None = None):
+    def update_db_tree_display(self, selected_database: Optional[str] = None) -> None:
         try:
             if selected_database:
                 # Get tables and fields for the selected database
@@ -225,7 +213,7 @@ class MainWindow(QMainWindow):
             self.status_bar.showMessage("Error updating database tree")
             traceback.print_exc()
 
-    def on_database_selected(self, database: str | None):
+    def on_database_selected(self, database: Optional[str]) -> None:
         if database:
             # TODO write a logging method
             self.output_text_edit.clear()
@@ -247,7 +235,7 @@ class MainWindow(QMainWindow):
             self.status_bar.showMessage("No database selected")
             print("No database selected", file=sys.stderr)
 
-    def create_database(self):
+    def create_database(self) -> None:
         dbname, ok = QInputDialog.getText(
             self, "Create Database", "Enter database name:"
         )
@@ -260,7 +248,7 @@ class MainWindow(QMainWindow):
                 self.output_text_edit.append(f"Error creating database {dbname}.")
                 self.status_bar.showMessage("Error creating database")
 
-    def delete_database(self):
+    def delete_database(self) -> None:
         selected_item = self.db_tree.currentItem()
         if selected_item and selected_item.parent() is None:
             dbname = selected_item.text(0)
@@ -292,7 +280,7 @@ class MainWindow(QMainWindow):
             self.output_text_edit.append("No database selected.")
             self.status_bar.showMessage("No database selected for deletion")
 
-    def show_database_contents(self):
+    def show_database_contents(self) -> None:
         selected_item = self.db_tree.currentItem()
         if selected_item:
             if selected_item.parent() is None:
@@ -307,7 +295,7 @@ class MainWindow(QMainWindow):
         else:
             self.status_bar.showMessage("No item selected")
 
-    def on_tree_selection_changed(self):
+    def on_tree_selection_changed(self) -> None:
         selected_items = self.db_tree.selectedItems()
         if selected_items:
             current_item = selected_items[0]
@@ -324,7 +312,7 @@ class MainWindow(QMainWindow):
                     table_name = current_item.text(0).split(" ")[0]
                     self.show_table_contents(dbname, table_name)
 
-    def show_table_contents(self, dbname, table_name):
+    def show_table_contents(self, dbname: str, table_name: str) -> None:
         col_names, rows, success = self.db_manager.get_table_contents(
             dbname, table_name
         )
@@ -345,13 +333,13 @@ class MainWindow(QMainWindow):
             self.status_bar.showMessage(f"Error: Table {table_name} not found")
             self.table_view.setModel(None)
 
-    def refresh_databases(self):
+    def refresh_databases(self) -> None:
         self.db_manager.connect()  # Reconnect to ensure we have the latest data
         self.list_databases()
         self.output_text_edit.append("Database list refreshed.")
         self.status_bar.showMessage("Database list refreshed")
 
-    def execute_custom_query(self):
+    def execute_custom_query(self) -> None:
         query = self.query_edit.get_query_text()
         selected_database = self.query_edit.get_database()
 
@@ -400,14 +388,14 @@ class MainWindow(QMainWindow):
             self.status_bar.showMessage("No database selected")
             self.table_view.setModel(None)  # Clear the table view
 
-    def save_connection_settings(self):
+    def save_connection_settings(self) -> None:
         connection_info = self.connection_widget.get_connection_info()
         for key, value in connection_info.items():
             self.settings.setValue(key, value)
         self.output_text_edit.append("Connection settings saved.")
         self.status_bar.showMessage("Connection settings saved")
 
-    def load_connection_settings(self):
+    def load_connection_settings(self) -> None:
         host = self.settings.value("host", self.db_manager.host)
         port = int(self.settings.value("port", self.db_manager.port))
         username = self.settings.value("username", self.db_manager.username)
