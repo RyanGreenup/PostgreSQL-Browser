@@ -77,7 +77,8 @@ class DatabaseManager:
                 )
                 return cur.fetchall()
         else:
-            # TODO include warning
+            issue_warning("Unable to get database connection", ConnectionWarning)
+            return []
 
     # TODO delete_database uses try/catch but this uses if/else
     # Make the code consistent
@@ -111,7 +112,8 @@ class DatabaseManager:
                 issue_warning(f"Error deleting database: {e}", DatabaseWarning)
                 return False
         else:
-            # TODO include warning
+            issue_warning("Unable to get database connection", ConnectionWarning)
+            return False
 
     def get_table_contents(
         self, dbname: str, table_name: str, limit: int = 1000
@@ -161,7 +163,8 @@ class DatabaseManager:
                 traceback.print_exc()
                 return [], [], False
         else:
-            # TODO include warning
+            issue_warning("Unable to get database connection", ConnectionWarning)
+            return [], [], False
 
     def execute_custom_query(
         self, dbname: str, query: str
@@ -188,7 +191,8 @@ class DatabaseManager:
                 self.conn.rollback()
                 return f"Error executing query: {str(e)}"
         else:
-            # TODO include warning
+            issue_warning("Unable to get database connection", ConnectionWarning)
+            return "Error: No database connection available."
 
     def get_tables(self, dbname: str) -> List[str]:
         """
@@ -208,7 +212,8 @@ class DatabaseManager:
                 )
                 return [row[0] for row in cur.fetchall()]
         else:
-            # TODO include warning
+            issue_warning("Unable to get database connection", ConnectionWarning)
+            return []
 
     def get_tables_and_fields_and_types(self, dbname: str) -> Dict[str, List[Field]]:
         if self.connect(dbname):
