@@ -1,4 +1,6 @@
 from __future__ import annotations
+import traceback
+from typing import Callable
 import sys
 from PyQt6.QtWidgets import (
     QMainWindow,
@@ -18,7 +20,7 @@ from PyQt6.QtCore import Qt, QSettings
 from PyQt6.QtGui import QAction
 
 from database_manager import DatabaseManager
-from gui_components import DatabaseTreeWidget, TableView
+from gui_components import DBTablesTree, TableView, DBFieldsView
 from connection_widget import ConnectionWidget
 
 
@@ -29,7 +31,7 @@ class DBChooser(QComboBox):
         db_manager: DatabaseManager | None = None,
         output: QTextEdit | None = None,
         status_bar: QStatusBar | None = None,
-        text_changed_callback=None,
+        text_changed_callbacks: list[Callable] = [],
     ):
         super().__init__(parent)
         self._check_args(db_manager)
@@ -42,8 +44,8 @@ class DBChooser(QComboBox):
         except Exception as e:
             self.log(f"Error listing databases: {str(e)}")
 
-        if text_changed_callback:
-            for f in text_changed_callback:
+        if text_changed_callbacks:
+            for f in text_changed_callbacks:
                 self.currentTextChanged.connect(f)
 
     def _check_args(self, db_manager):
@@ -132,7 +134,7 @@ class MainWindow(QMainWindow):
         main_splitter = QSplitter(Qt.Orientation.Horizontal)
 
         left_side = QSplitter(Qt.Orientation.Vertical)
-        self.db_tree = DatabaseTreeWidget()
+        self.db_tree = DBTablesTree()
         self.db_tree.itemSelectionChanged.connect(self.on_tree_selection_changed)
         left_side.addWidget(self.db_tree)
 
@@ -146,12 +148,13 @@ class MainWindow(QMainWindow):
         self.output_text_edit = QTextEdit()
         self.output_text_edit.setReadOnly(True)
 
+        # self.update_db_tree_display
+        #
         self.query_edit = SQLQuery(
             db_manager=self.db_manager,
-            on_db_choice_callback=self.update_db_tree_display,
+            on_db_choice_callbacks=[],
             output=self.output_text_edit,
             status_bar=self.status_bar,
-            on_db_choice_callbacks=[self.on_database_selected],
         )
         right_side.addWidget(self.query_edit)
 
@@ -197,7 +200,7 @@ class MainWindow(QMainWindow):
             self.output_text_edit.append(f"Error listing databases: {str(e)}")
             self.status_bar.showMessage("Error listing databases")
 
-    def update_db_tree_display(self, selected_database=None):
+    def update_db_tree_display(self, selected_database: str | None = None):
         try:
             if selected_database:
                 # Get tables and fields for the selected database
@@ -209,6 +212,7 @@ class MainWindow(QMainWindow):
                 self.db_tree.populate(
                     [selected_database], {selected_database: tables_and_fields}
                 )
+
 
                 # Expand the selected database
                 root = self.db_tree.invisibleRootItem()
@@ -228,9 +232,11 @@ class MainWindow(QMainWindow):
         except Exception as e:
             self.output_text_edit.append(f"Error updating database tree: {str(e)}")
             self.status_bar.showMessage("Error updating database tree")
+            traceback.print_exc()
 
-    def on_database_selected(self, database):
+    def on_database_selected(self, database: str | None):
         if database:
+            # TODO write a logging method
             self.output_text_edit.clear()
             self.output_text_edit.append(f"Selected database: {database}")
             self.status_bar.showMessage(f"Selected database: {database}")
@@ -245,6 +251,10 @@ class MainWindow(QMainWindow):
 
             # Update the DBTreeDisplay
             self.update_db_tree_display(database)
+        else:
+            self.output_text_edit.append("No database selected.")
+            self.status_bar.showMessage("No database selected")
+            print("No database selected", file=sys.stderr)
 
     def create_database(self):
         dbname, ok = QInputDialog.getText(
@@ -384,7 +394,8 @@ class MainWindow(QMainWindow):
                 self.status_bar.showMessage("Query executed successfully")
 
                 # Update the DBTreeDisplay after executing the query
-                self.update_db_tree_display(selected_database)
+                print(f"{selected_database=}")
+                # self.update_db_tree_display(selected_database)
             except Exception as e:
                 self.output_text_edit.clear()
                 self.output_text_edit.append(f"Error executing query: {str(e)}")
@@ -454,15 +465,14 @@ class SQLQuery(QWidget):
         self,
         parent=None,
         db_manager: DatabaseManager | None = None,
-        on_db_choice_callback=None,
         output=None,
         status_bar=None,
-        on_db_choice_callbacks=None,
+        on_db_choice_callbacks: list[Callable] = [],
     ):
         self.output = output  # TODO rename as output log
         super().__init__(parent)
         self.db_manager = db_manager
-        self.read_only_tree = DBTreeDisplay()
+        self.read_only_tree = DBFieldsView(db_manager=self.db_manager)
         self.query_edit = SQLQueryEditor()
         self.status_bar = status_bar
 
@@ -471,13 +481,9 @@ class SQLQuery(QWidget):
             db_manager=self.db_manager,
             output=self.output,
             status_bar=self.status_bar,
-            text_changed_callback=[self.update_db_tree_display].extend(
-                on_db_choice_callbacks
-            ),
+            text_changed_callbacks=on_db_choice_callbacks,
         )
         self.db_chooser.populate()  # TODO try removing this
-        if on_db_choice_callback:
-            self.db_chooser.currentTextChanged.connect(on_db_choice_callback)
 
         self.initUI()
 

@@ -1,3 +1,4 @@
+from collections import namedtuple
 import psycopg2
 from psycopg2.extensions import connection as PsycopgConnection
 from typing import Optional, List, Tuple, Union, Dict
@@ -57,17 +58,22 @@ class DatabaseManager:
             )
             return cur.fetchall()
 
+    # TODO delete_database uses try/catch but this uses if/else
+    # Make the code consistent
     def create_database(self, dbname: str) -> bool:
-        if not self.connect():
-            return False
-
-        try:
-            self.conn.autocommit = True
-            with self.conn.cursor() as cur:
-                cur.execute(f'CREATE DATABASE "{dbname}"')
-            return True
-        except psycopg2.Error as e:
-            print(f"Error creating database: {e}")
+        if self.connect():
+            try:
+                if conn := self.conn:
+                    conn.autocommit = True
+                    with conn.cursor() as cur:
+                        cur.execute(f'CREATE DATABASE "{dbname}"')
+                    return True
+                else:
+                    return False
+            except psycopg2.Error as e:
+                print(f"Error creating database: {e}")
+                return False
+        else:
             return False
 
     def delete_database(self, dbname: str) -> bool:
@@ -87,7 +93,6 @@ class DatabaseManager:
         self, dbname: str, table_name: str, limit: int = 1000
     ) -> Tuple[List[str], List[Tuple], bool]:
 
-        print(table_name)
         if not self.connect(dbname):
             return [], [], False
 
@@ -138,8 +143,6 @@ class DatabaseManager:
 
         try:
             with self.conn.cursor() as cur:
-                print(query)
-                # Execute the query as-is, without modifying it
                 cur.execute(query)
                 if cur.description:
                     columns = [desc[0] for desc in cur.description]
@@ -155,35 +158,58 @@ class DatabaseManager:
         except psycopg2.Error as e:
             self.conn.rollback()
             return f"Error executing query: {str(e)}"
+
     def get_tables_and_fields(self, dbname: str) -> Dict[str, List[str]]:
         if not self.connect(dbname):
             return {}
 
         tables_and_fields = {}
         try:
+            # TODO handle no cursor [fn cur_err]
             with self.conn.cursor() as cur:
-                cur.execute("""
+                cur.execute(
+                    """
                     SELECT table_name
                     FROM information_schema.tables
                     WHERE table_schema = 'public'
-                """)
+                """
+                )
                 tables = [row[0] for row in cur.fetchall()]
+
+                Field = namedtuple("Field", ["name", "type"])
 
                 for table in tables:
                     cur.execute(
                         """
-                        SELECT column_name
+                        SELECT column_name, data_type
                         FROM information_schema.columns
                         WHERE table_schema = 'public'
                         AND table_name = %s
                         """,
-                        (table,)
+                        (table,),
                     )
 
-                    fields = [row[0] for row in cur.fetchall()]
+                    fields = [
+                        Field(name=column_name, type=data_type)
+                        for column_name, data_type in cur.fetchall()
+                    ]
                     tables_and_fields[table] = fields
 
         except psycopg2.Error as e:
             print(f"Error fetching tables and fields: {e}")
 
         return tables_and_fields
+
+
+# Footnotes
+# [fn cur_err]
+# if conn := self.conn:
+#     try:
+#         with conn.cursor() as cur:
+#             # Use cur
+#     except Exception as e:
+#         # Handle database operation exceptions
+#         print(f"Error during database operation: {e}")
+# else:
+#     # Handle no connection
+#     print("No database connection available.")
