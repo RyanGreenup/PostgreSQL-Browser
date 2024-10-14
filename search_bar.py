@@ -29,14 +29,25 @@ class SearchWidget(QWidget):
     def update_field_combo_box(self):
         self.field_combo_box.clear()
         selected_table = self.db_tree.get_selected_table()
+        print(f"Selected table: {selected_table}")  # Debug print
         if selected_table:
             try:
                 db_name = self.db_manager.current_database
-                fields = self.db_manager.get_column_names(selected_table, self.db_manager.get_cursor(db_name))
-                self.field_combo_box.addItems(fields)
-                self.field_combo_box.setCurrentIndex(0)
+                if db_name:
+                    tables_and_fields = self.db_manager.get_tables_and_fields(db_name)
+                    if selected_table in tables_and_fields:
+                        fields = tables_and_fields[selected_table]
+                        print(f"Fields: {fields}")  # Debug print
+                        self.field_combo_box.addItems(fields)
+                        self.field_combo_box.setCurrentIndex(0)
+                    else:
+                        print(f"Selected table {selected_table} not found in database {db_name}")
+                else:
+                    print("No database selected")
             except Exception as e:
-                issue_warning("Error getting table fields", DatabaseWarning, e)
+                issue_warning(f"Error getting table fields: {str(e)}", DatabaseWarning, e)
+        else:
+            print("No table selected")  # Debug print
 
     def refresh(self):
         self.search_bar.clear()
