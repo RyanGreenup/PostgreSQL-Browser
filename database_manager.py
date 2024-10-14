@@ -1,6 +1,14 @@
 import psycopg2
 import sys
 import traceback
+from warning_types import (
+    DatabaseWarning,
+    ConnectionWarning,
+    QueryWarning,
+    TableWarning,
+    issue_warning,
+    unable_to_connect_to_database,
+)
 from psycopg2.extensions import connection as PsycopgConnection
 from typing import Optional, List, Tuple, Union, Dict, Any
 from data_types import Field
@@ -14,7 +22,9 @@ class DatabaseManager:
         self.password = password
         self.conn: Optional[PsycopgConnection] = None
 
-    def update_connection(self, host: str, port: int, username: str, password: str) -> None:
+    def update_connection(
+        self, host: str, port: int, username: str, password: str
+    ) -> None:
         self.host = host
         self.port = port
         self.username = username
@@ -35,16 +45,22 @@ class DatabaseManager:
             )
             return True
         except psycopg2.Error as e:
-            print(f"Error connecting to database: {e}")
+            unable_to_connect_to_database(e)
             return False
 
     def list_databases(self) -> List[str]:
         if not self.connect():
             return []
 
-        with self.conn.cursor() as cur:
-            cur.execute("SELECT datname FROM pg_database WHERE datistemplate = false")
-            return [db[0] for db in cur.fetchall()]
+        if conn := self.conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT datname FROM pg_database WHERE datistemplate = false"
+                )
+                return [db[0] for db in cur.fetchall()]
+        else:
+            print("Unable to get database Connection", file=sys.stderr)
+            return []
 
     def list_tables(self, dbname: str) -> List[Tuple[str, str]]:
         if not self.connect(dbname):
@@ -185,26 +201,33 @@ class DatabaseManager:
                 try:
                     with conn.cursor() as cur:
                         # Fetch tables
-                        cur.execute("""
+                        cur.execute(
+                            """
                             SELECT table_name
                             FROM information_schema.tables
                             WHERE table_schema = 'public'
-                        """)
+                        """
+                        )
                         tables = [row[0] for row in cur.fetchall()]
-                        
+
                         tables_and_fields = {}
                         for table in tables:
-                            cur.execute("""
+                            cur.execute(
+                                """
                                 SELECT column_name, data_type
                                 FROM information_schema.columns
                                 WHERE table_schema = 'public'
                                 AND table_name = %s
-                            """, (table,))
-                            
-                            fields = [Field(name=column_name, type=data_type)
-                                      for column_name, data_type in cur.fetchall()]
+                            """,
+                                (table,),
+                            )
+
+                            fields = [
+                                Field(name=column_name, type=data_type)
+                                for column_name, data_type in cur.fetchall()
+                            ]
                             tables_and_fields[table] = fields
-                        
+
                         return tables_and_fields
                 except psycopg2.Error as e:
                     print(f"Error fetching tables and fields: {e}")
