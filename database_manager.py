@@ -1,7 +1,9 @@
-from collections import namedtuple
 import psycopg2
+import sys
+import traceback
 from psycopg2.extensions import connection as PsycopgConnection
 from typing import Optional, List, Tuple, Union, Dict
+from data_types import Field
 
 
 class DatabaseManager:
@@ -133,6 +135,7 @@ class DatabaseManager:
                 return col_names, rows, True
         except psycopg2.Error as e:
             print(f"Error fetching table contents: {e}")
+            traceback.print_exc()
             return [], [], False
 
     def execute_custom_query(
@@ -159,45 +162,69 @@ class DatabaseManager:
             self.conn.rollback()
             return f"Error executing query: {str(e)}"
 
-    def get_tables_and_fields(self, dbname: str) -> Dict[str, List[str]]:
+    def get_tables(self, dbname: str) -> List[str]:
+        """
+        Get a list of tables in the specified database
+        """
         if not self.connect(dbname):
+            return []
+
+        with self.conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT table_name
+                FROM information_schema.tables
+                WHERE table_schema = 'public'
+            """
+            )
+            return [row[0] for row in cur.fetchall()]
+
+    def get_tables_and_fields_and_types(self, dbname: str) -> Dict[str, List[Field]]:
+        if self.connect(dbname):
+            if conn := self.conn:
+                try:
+                    # Use a single cursor for the entire operation
+                    with conn.cursor() as cur:
+                        tables = self.get_tables(dbname)
+                        tables_and_fields = dict()
+                        for table in tables:
+                            cur.execute(
+                                """
+                                SELECT column_name, data_type
+                                FROM information_schema.columns
+                                WHERE table_schema = 'public'
+                                AND table_name = %s
+                                """,
+                                (table,),
+                            )
+
+                            fields = [
+                                Field(name=column_name, type=data_type)
+                                for column_name, data_type in cur.fetchall()
+                            ]
+                            tables_and_fields[table] = fields
+
+                except psycopg2.Error as e:
+                    print(f"Error fetching tables and fields: {e}")
+                    traceback.print_exc()
+            else:
+                print("Unable to get cursor", file=sys.stderr)
+                traceback.print_exc()
+        else:
             return {}
 
-        tables_and_fields = {}
-        try:
-            # TODO handle no cursor [fn cur_err]
-            with self.conn.cursor() as cur:
-                cur.execute(
-                    """
-                    SELECT table_name
-                    FROM information_schema.tables
-                    WHERE table_schema = 'public'
-                """
-                )
-                tables = [row[0] for row in cur.fetchall()]
+        return tables_and_fields
 
-                Field = namedtuple("Field", ["name", "type"])
-
-                for table in tables:
-                    cur.execute(
-                        """
-                        SELECT column_name, data_type
-                        FROM information_schema.columns
-                        WHERE table_schema = 'public'
-                        AND table_name = %s
-                        """,
-                        (table,),
-                    )
-
-                    fields = [
-                        Field(name=column_name, type=data_type)
-                        for column_name, data_type in cur.fetchall()
-                    ]
-                    tables_and_fields[table] = fields
-
-        except psycopg2.Error as e:
-            print(f"Error fetching tables and fields: {e}")
-
+    def get_tables_and_fields(self, dbname: str) -> Dict[str, List[str]]:
+        """
+        Get a dictionary of tables with their respective fields.
+        This function extracts the field names from the Field objects.
+        """
+        tables_and_fields_and_types = self.get_tables_and_fields_and_types(dbname)
+        tables_and_fields = {
+            table: [field.name for field in fields]
+            for table, fields in tables_and_fields_and_types.items()
+        }
         return tables_and_fields
 
 
