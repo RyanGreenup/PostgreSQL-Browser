@@ -1,4 +1,5 @@
 from typing import List, Dict, Tuple, Any
+from data_types import Field
 from PyQt6.QtWidgets import QTreeWidget, QTreeWidgetItem, QTableView, QWidget
 from PyQt6.QtGui import QStandardItemModel, QStandardItem
 from database_manager import DatabaseManager
@@ -24,7 +25,9 @@ class DBTablesTree(QTreeWidget):
 
 
 class DBFieldsView(QTreeWidget):
-    def __init__(self, parent: QWidget | None = None, db_manager: DatabaseManager | None = None) -> None:
+    def __init__(
+        self, parent: QWidget | None = None, db_manager: DatabaseManager | None = None
+    ) -> None:
         super().__init__(parent)
         self.setHeaderLabels(["Database Fields"])
         if db_manager is None:
@@ -42,7 +45,7 @@ class DBFieldsView(QTreeWidget):
             except Exception as e:
                 print(e)
 
-    def get_tables_and_fields(self) -> Dict[str, List[Tuple[str, str]]]:
+    def get_tables_and_fields(self) -> Dict[str, List[Field]]:
         """
         A callback function that returns the tables and fields from the selected item
         """
@@ -54,7 +57,8 @@ class DBFieldsView(QTreeWidget):
                 for j in range(table_item.childCount()):
                     if field_item := table_item.child(j):
                         field_name, field_type = field_item.text(0).split()
-                        fields.append((field_name, field_type))
+                        f = Field(field_name, field_type)
+                        fields.append(f)
                         tables[table_name] = fields
         return tables
 
