@@ -111,7 +111,7 @@ class DatabaseManager:
 
                 # Get column names
                 cur.execute(
-                    f"""
+                    """
                     SELECT column_name
                     FROM information_schema.columns
                     WHERE table_schema = 'public'
@@ -122,7 +122,7 @@ class DatabaseManager:
                 col_names = [row[0] for row in cur.fetchall()]
 
                 # Get table contents
-                cur.execute(f'SELECT * FROM "%s" LIMIT %s', (table_name, limit))
+                cur.execute(f'SELECT * FROM "{table_name}" LIMIT %s', (limit,))
                 rows = cur.fetchall()
 
                 return col_names, rows, True
@@ -139,6 +139,7 @@ class DatabaseManager:
         try:
             with self.conn.cursor() as cur:
                 print(query)
+                # Execute the query as-is, without modifying it
                 cur.execute(query)
                 if cur.description:
                     columns = [desc[0] for desc in cur.description]
@@ -153,7 +154,6 @@ class DatabaseManager:
                     return result
         except psycopg2.Error as e:
             self.conn.rollback()
-            self.exit(1)
             return f"Error executing query: {str(e)}"
     def get_tables_and_fields(self, dbname: str) -> Dict[str, List[str]]:
         if not self.connect(dbname):
@@ -170,15 +170,14 @@ class DatabaseManager:
                 tables = [row[0] for row in cur.fetchall()]
 
                 for table in tables:
-                    # Assume `cur` is your database cursor
                     cur.execute(
                         """
                         SELECT column_name
                         FROM information_schema.columns
-                        WHERE table_schema = %s
+                        WHERE table_schema = 'public'
                         AND table_name = %s
                         """,
-                        ('public', table)
+                        (table,)
                     )
 
                     fields = [row[0] for row in cur.fetchall()]
