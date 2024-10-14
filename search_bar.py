@@ -83,7 +83,7 @@ class SearchWidget(QWidget):
                 params = None
             else:
                 if field:
-                    # Search in the selected field
+                    # Search in a specific field
                     query = f"""
                     SELECT * FROM "{table}"
                     WHERE "{field}" ILIKE %s;
@@ -91,13 +91,13 @@ class SearchWidget(QWidget):
                     params = (f"%{search_term}%",)
                 else:
                     # Search across all fields
-                    columns = self.db_manager.get_column_names(table, self.db_manager.cursor)
-                    conditions = [f'"{col}" ILIKE %s' for col in columns]
+                    fields = self.db_manager.get_tables_and_fields(database)[table]
+                    conditions = [f'"{f}" ILIKE %s' for f in fields]
                     query = f"""
                     SELECT * FROM "{table}"
                     WHERE {" OR ".join(conditions)};
                     """
-                    params = tuple(f"%{search_term}%" for _ in columns)
+                    params = tuple(f"%{search_term}%" for _ in fields)
 
             result = self.db_manager.execute_custom_query(database, query, params=params)
             if isinstance(result, tuple) and len(result) == 2:
