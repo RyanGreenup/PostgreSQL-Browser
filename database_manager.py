@@ -59,7 +59,7 @@ class DatabaseManager:
                 )
                 return [db[0] for db in cur.fetchall()]
         else:
-            print("Unable to get database Connection", file=sys.stderr)
+            issue_warning("Unable to get database Connection", ConnectionWarning)
             return []
 
     def list_tables(self, dbname: str) -> List[Tuple[str, str]]:
@@ -89,7 +89,7 @@ class DatabaseManager:
                 else:
                     return False
             except psycopg2.Error as e:
-                print(f"Error creating database: {e}")
+                issue_warning(f"Error creating database: {e}", DatabaseWarning)
                 return False
         else:
             return False
@@ -104,7 +104,7 @@ class DatabaseManager:
                 cur.execute(f'DROP DATABASE IF EXISTS "{dbname}"')
             return True
         except psycopg2.Error as e:
-            print(f"Error deleting database: {e}")
+            issue_warning(f"Error deleting database: {e}", DatabaseWarning)
             return False
 
     def get_table_contents(
@@ -150,7 +150,7 @@ class DatabaseManager:
 
                 return col_names, rows, True
         except psycopg2.Error as e:
-            print(f"Error fetching table contents: {e}")
+            issue_warning(f"Error fetching table contents: {e}", TableWarning)
             traceback.print_exc()
             return [], [], False
 
@@ -230,10 +230,10 @@ class DatabaseManager:
 
                         return tables_and_fields
                 except psycopg2.Error as e:
-                    print(f"Error fetching tables and fields: {e}")
+                    issue_warning(f"Error fetching tables and fields: {e}", QueryWarning)
                     traceback.print_exc()
             else:
-                print("Unable to get cursor", file=sys.stderr)
+                issue_warning("Unable to get cursor", ConnectionWarning)
                 traceback.print_exc()
         return {}
 
