@@ -20,7 +20,9 @@ class SearchWidget(QWidget):
         layout = QHBoxLayout()
         self.search_bar = QLineEdit()
         self.search_bar.setPlaceholderText("Search for a term")
-        self.search_bar.textEdited.connect(self.search_db)  # Changed from textChanged to textEdited
+        self.search_bar.textEdited.connect(
+            self.search_db
+        )  # Changed from textChanged to textEdited
         # TODO map this to CTL+SPACE
         self.search_bar.returnPressed.connect(self.select_nothing)
 
@@ -49,11 +51,15 @@ class SearchWidget(QWidget):
                         self.field_combo_box.addItems(fields)
                         self.field_combo_box.setCurrentIndex(0)
                     else:
-                        print(f"Selected table {selected_table} not found in database {db_name}")
+                        print(
+                            f"Selected table {selected_table} not found in database {db_name}"
+                        )
                 else:
                     print("No database selected")
             except Exception as e:
-                issue_warning(f"Error getting table fields: {str(e)}", DatabaseWarning, e)
+                issue_warning(
+                    f"Error getting table fields: {str(e)}", DatabaseWarning, e
+                )
         else:
             print("No table selected")  # Debug print
 
@@ -87,14 +93,17 @@ class SearchWidget(QWidget):
             params = (f"%{search_term}%",)
 
         if database := self.db_manager.current_database:
-            result = self.db_manager.execute_custom_query(database, query, params=params)
+            result = self.db_manager.execute_custom_query(
+                database, query, params=params
+            )
             if result is not None:
                 # Convert string result to list of lists
                 if isinstance(result, str):
-                    result = [row.split(',') for row in result.strip().split('\n')]
+                    result = [row.split(",") for row in result.strip().split("\n")]
                 self.search_performed.emit(table, result)
         else:
             issue_warning("No database selected", DatabaseWarning)
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
