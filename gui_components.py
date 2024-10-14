@@ -1,6 +1,7 @@
 from PyQt6.QtWidgets import QTreeWidget, QTreeWidgetItem, QTableView
 from PyQt6.QtGui import QStandardItemModel, QStandardItem
 from database_manager import DatabaseManager
+from data_types import Field
 
 
 class DBTablesTree(QTreeWidget):
@@ -30,7 +31,7 @@ class DBFieldsView(QTreeWidget):
 
         self.db_manager = db_manager
 
-    def populate(self, tables: dict[str, list[tuple[str, str]]]):
+    def populate(self, tables: dict[str, list[Field]]):
         self.clear()
         for table, (field, field_type) in tables.items():
             table_item = QTreeWidgetItem(self, [table])
