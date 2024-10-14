@@ -37,6 +37,7 @@ alias lw_db="pg_browser  --host localhost --password ${LW_DB_PASS} --username po
 lw_db
 ```
 
+I was also hoping to move [my notetaking app](https://github.com/RyanGreenup/Draftsmith) to PostgreSQL, and I wanted a simple way to browse the database.
 
 
 
