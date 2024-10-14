@@ -65,10 +65,10 @@ class MainWindow(QMainWindow):
                 settings_menu.addAction(save_settings_action)
 
             # Database Menu
-            for action_text, action_slot in actions:
-                action = QAction(action_text, self)
-                action.triggered.connect(action_slot)
-                if database_menu := menubar.addMenu("Database"):
+            if database_menu := menubar.addMenu("Database"):
+                for action_text, action_slot in actions:
+                    action = QAction(action_text, self)
+                    action.triggered.connect(action_slot)
                     database_menu.addAction(action)
 
             # Query Menu
