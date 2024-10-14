@@ -2,19 +2,19 @@ import psycopg2
 import sys
 import traceback
 from psycopg2.extensions import connection as PsycopgConnection
-from typing import Optional, List, Tuple, Union, Dict
+from typing import Optional, List, Tuple, Union, Dict, Any
 from data_types import Field
 
 
 class DatabaseManager:
-    def __init__(self, host: str, port: int, username: str, password: str):
+    def __init__(self, host: str, port: int, username: str, password: str) -> None:
         self.host = host
         self.port = port
         self.username = username
         self.password = password
         self.conn: Optional[PsycopgConnection] = None
 
-    def update_connection(self, host: str, port: int, username: str, password: str):
+    def update_connection(self, host: str, port: int, username: str, password: str) -> None:
         self.host = host
         self.port = port
         self.username = username
@@ -93,7 +93,7 @@ class DatabaseManager:
 
     def get_table_contents(
         self, dbname: str, table_name: str, limit: int = 1000
-    ) -> Tuple[List[str], List[Tuple], bool]:
+    ) -> Tuple[List[str], List[Tuple[Any, ...]], bool]:
 
         if not self.connect(dbname):
             return [], [], False
@@ -140,7 +140,7 @@ class DatabaseManager:
 
     def execute_custom_query(
         self, dbname: str, query: str
-    ) -> Union[str, Tuple[List[str], List[Tuple]]]:
+    ) -> Union[str, Tuple[List[str], List[Tuple[Any, ...]]]]:
         if not self.connect(dbname):
             return "Error: Unable to connect to the database."
 
