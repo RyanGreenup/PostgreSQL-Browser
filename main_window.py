@@ -213,7 +213,6 @@ class MainWindow(QMainWindow):
                     [selected_database], {selected_database: tables_and_fields}
                 )
 
-
                 # Expand the selected database
                 root = self.db_tree.invisibleRootItem()
                 if root.childCount() > 0:
@@ -463,11 +462,11 @@ class SQLQueryEditor(QTextEdit):
 class SQLQuery(QWidget):
     def __init__(
         self,
+        db_manager: DatabaseManager,
+        on_db_choice_callbacks: list[Callable] = [],
         parent=None,
-        db_manager: DatabaseManager | None = None,
         output=None,
         status_bar=None,
-        on_db_choice_callbacks: list[Callable] = [],
     ):
         self.output = output  # TODO rename as output log
         super().__init__(parent)
@@ -483,13 +482,12 @@ class SQLQuery(QWidget):
             status_bar=self.status_bar,
             text_changed_callbacks=on_db_choice_callbacks,
         )
-        self.db_chooser.populate()  # TODO try removing this
+        self.db_chooser.populate()  # T
+
+        # Connect the Combobox to the tree
+        self.db_chooser.currentTextChanged.connect(self.update_db_tree_display)
 
         self.initUI()
-
-    def _handle_values(self, db_manager):
-        if not db_manager:
-            raise ValueError("db_manager is required")
 
     def initUI(self):
         splitter = QSplitter()
@@ -511,10 +509,9 @@ class SQLQuery(QWidget):
     def get_database(self):
         return self.db_chooser.currentText()
 
-    def update_db_tree_display(self, database: str | None):
-        if database:
-            tables_and_fields = self.db_manager.get_tables_and_fields(database)
-            self.read_only_tree.populate(database, tables_and_fields)
+    def update_db_tree_display(self, database: str):
+        tables_and_fields = self.db_manager.get_tables_and_fields_and_types(database)
+        self.read_only_tree.populate(tables_and_fields)
 
     def execute_custom_query(self, selected_database, query):
         self.db_manager.execute_custom_query(selected_database, query)
