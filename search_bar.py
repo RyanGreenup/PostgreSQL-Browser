@@ -20,7 +20,7 @@ class SearchWidget(QWidget):
         layout = QHBoxLayout()
         self.search_bar = QLineEdit()
         self.search_bar.setPlaceholderText("Search for a term")
-        self.search_bar.textChanged.connect(self.search_db)
+        self.search_bar.textEdited.connect(self.search_db)  # Changed from textChanged to textEdited
         # TODO map this to CTL+SPACE
         self.search_bar.returnPressed.connect(self.select_nothing)
 
@@ -63,7 +63,7 @@ class SearchWidget(QWidget):
         self.update_field_combo_box()
 
     def search_db(self):
-        search_term = self.search_bar.text()
+        search_term = self.search_bar.text().strip()
         field = self.field_combo_box.currentText()
         table = self.db_tree.get_selected_table()
 
@@ -71,17 +71,25 @@ class SearchWidget(QWidget):
             issue_warning("No table selected", DatabaseWarning)
             return
 
-        query = f"""
-        SELECT * FROM {table}
-        WHERE {field} LIKE %s;
-        """
-        search_term = "%" + search_term + "%"
+        if not field:
+            issue_warning("No field selected", DatabaseWarning)
+            return
+
+        if not search_term:
+            # If search term is empty, fetch all rows
+            query = f"SELECT * FROM {table};"
+            params = None
+        else:
+            query = f"""
+            SELECT * FROM {table}
+            WHERE {field} ILIKE %s;
+            """
+            params = (f"%{search_term}%",)
+
         if database := self.db_manager.current_database:
-            result = self.db_manager.execute_custom_query(
-                database, query, params=(search_term,)
-            )
-            if result:
-                self.search_performed.emit(table, result)  # Emit the signal with the table name and result
+            result = self.db_manager.execute_custom_query(database, query, params=params)
+            if result is not None:  # Changed from 'if result:'
+                self.search_performed.emit(table, result)
         else:
             issue_warning("No database selected", DatabaseWarning)
 
