@@ -66,15 +66,18 @@ class DatabaseManager:
         if not self.connect(dbname):
             return []
 
-        with self.conn.cursor() as cur:
-            cur.execute(
+        if conn := self.conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT table_name, table_type
+                    FROM information_schema.tables
+                    WHERE table_schema='public'
                 """
-                SELECT table_name, table_type
-                FROM information_schema.tables
-                WHERE table_schema='public'
-            """
-            )
-            return cur.fetchall()
+                )
+                return cur.fetchall()
+        else:
+            # TODO include warning
 
     # TODO delete_database uses try/catch but this uses if/else
     # Make the code consistent
@@ -98,14 +101,17 @@ class DatabaseManager:
         if not self.connect():
             return False
 
-        try:
-            self.conn.autocommit = True
-            with self.conn.cursor() as cur:
-                cur.execute(f'DROP DATABASE IF EXISTS "{dbname}"')
-            return True
-        except psycopg2.Error as e:
-            issue_warning(f"Error deleting database: {e}", DatabaseWarning)
-            return False
+        if conn := self.conn:
+            try:
+                conn.autocommit = True
+                with conn.cursor() as cur:
+                    cur.execute(f'DROP DATABASE IF EXISTS "{dbname}"')
+                return True
+            except psycopg2.Error as e:
+                issue_warning(f"Error deleting database: {e}", DatabaseWarning)
+                return False
+        else:
+            # TODO include warning
 
     def get_table_contents(
         self, dbname: str, table_name: str, limit: int = 1000
@@ -114,45 +120,48 @@ class DatabaseManager:
         if not self.connect(dbname):
             return [], [], False
 
-        try:
-            with self.conn.cursor() as cur:
-                # First, check if the table exists
-                cur.execute(
-                    """
-                    SELECT EXISTS (
-                        SELECT FROM information_schema.tables
+        if conn := self.conn:
+            try:
+                with conn.cursor() as cur:
+                    # First, check if the table exists
+                    cur.execute(
+                        """
+                        SELECT EXISTS (
+                            SELECT FROM information_schema.tables
+                            WHERE table_schema = 'public'
+                            AND table_name = %s
+                        )
+                    """,
+                        (table_name,),
+                    )
+                    table_exists = cur.fetchone()[0]
+
+                    if not table_exists:
+                        return [], [], False
+
+                    # Get column names
+                    cur.execute(
+                        """
+                        SELECT column_name
+                        FROM information_schema.columns
                         WHERE table_schema = 'public'
                         AND table_name = %s
+                    """,
+                        (table_name,),
                     )
-                """,
-                    (table_name,),
-                )
-                table_exists = cur.fetchone()[0]
+                    col_names = [row[0] for row in cur.fetchall()]
 
-                if not table_exists:
-                    return [], [], False
+                    # Get table contents
+                    cur.execute(f'SELECT * FROM "{table_name}" LIMIT %s', (limit,))
+                    rows = cur.fetchall()
 
-                # Get column names
-                cur.execute(
-                    """
-                    SELECT column_name
-                    FROM information_schema.columns
-                    WHERE table_schema = 'public'
-                    AND table_name = %s
-                """,
-                    (table_name,),
-                )
-                col_names = [row[0] for row in cur.fetchall()]
-
-                # Get table contents
-                cur.execute(f'SELECT * FROM "{table_name}" LIMIT %s', (limit,))
-                rows = cur.fetchall()
-
-                return col_names, rows, True
-        except psycopg2.Error as e:
-            issue_warning(f"Error fetching table contents: {e}", TableWarning)
-            traceback.print_exc()
-            return [], [], False
+                    return col_names, rows, True
+            except psycopg2.Error as e:
+                issue_warning(f"Error fetching table contents: {e}", TableWarning)
+                traceback.print_exc()
+                return [], [], False
+        else:
+            # TODO include warning
 
     def execute_custom_query(
         self, dbname: str, query: str
@@ -160,23 +169,26 @@ class DatabaseManager:
         if not self.connect(dbname):
             return "Error: Unable to connect to the database."
 
-        try:
-            with self.conn.cursor() as cur:
-                cur.execute(query)
-                if cur.description:
-                    columns = [desc[0] for desc in cur.description]
-                    rows = cur.fetchall()
-                    self.conn.commit()
-                    return columns, rows
-                else:
-                    result = (
-                        f"Query executed successfully. Rows affected: {cur.rowcount}"
-                    )
-                    self.conn.commit()
-                    return result
-        except psycopg2.Error as e:
-            self.conn.rollback()
-            return f"Error executing query: {str(e)}"
+        if conn := self.conn:
+            try:
+                with conn.cursor() as cur:
+                    cur.execute(query)
+                    if cur.description:
+                        columns = [desc[0] for desc in cur.description]
+                        rows = cur.fetchall()
+                        self.conn.commit()
+                        return columns, rows
+                    else:
+                        result = (
+                            f"Query executed successfully. Rows affected: {cur.rowcount}"
+                        )
+                        self.conn.commit()
+                        return result
+            except psycopg2.Error as e:
+                self.conn.rollback()
+                return f"Error executing query: {str(e)}"
+        else:
+            # TODO include warning
 
     def get_tables(self, dbname: str) -> List[str]:
         """
@@ -185,15 +197,18 @@ class DatabaseManager:
         if not self.connect(dbname):
             return []
 
-        with self.conn.cursor() as cur:
-            cur.execute(
+        if conn := self.conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT table_name
+                    FROM information_schema.tables
+                    WHERE table_schema = 'public'
                 """
-                SELECT table_name
-                FROM information_schema.tables
-                WHERE table_schema = 'public'
-            """
-            )
-            return [row[0] for row in cur.fetchall()]
+                )
+                return [row[0] for row in cur.fetchall()]
+        else:
+            # TODO include warning
 
     def get_tables_and_fields_and_types(self, dbname: str) -> Dict[str, List[Field]]:
         if self.connect(dbname):
