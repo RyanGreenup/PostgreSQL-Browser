@@ -329,17 +329,13 @@ class MainWindow(QMainWindow):
                 # Check if the result is a tuple (indicating a SELECT query)
                 if isinstance(result, tuple) and len(result) == 2:
                     col_names, rows = result
-                    self.table_view.update_content(
-                        col_names, [list(row) for row in rows]
-                    )
+                    self.table_view.update_content(col_names, [list(row) for row in rows])
                     self.output_text_edit.clear()
                     if rows:
                         self.output_text_edit.append(
                             "Query executed successfully. Showing results in table view."
                         )
-                        self.output_text_edit.append(
-                            "Number of rows returned: {len(rows)}"
-                        )
+                        self.output_text_edit.append(f"Number of rows returned: {len(rows)}")
                     else:
                         self.output_text_edit.append(
                             "Query executed successfully. No rows returned."
@@ -348,9 +344,7 @@ class MainWindow(QMainWindow):
                     # For non-SELECT queries (INSERT, UPDATE, DELETE, etc.)
                     self.table_view.setModel(None)  # Clear the table view
                     self.output_text_edit.clear()
-                    self.output_text_edit.append(
-                        f"Query executed successfully:\n{result}"
-                    )
+                    self.output_text_edit.append(f"Query executed successfully:\n{result}")
                 self.status_bar.showMessage("Query executed successfully")
             except Exception as e:
                 self.output_text_edit.clear()

@@ -66,6 +66,7 @@ class SQLQuery(QWidget):
         self.read_only_tree = DBFieldsView(db_manager=self.db_manager)
         self.query_edit = SQLQueryEditor()
         self.status_bar = status_bar
+        self.current_database = None  # Add this line to keep track of the current database
 
         # DB Chooser
         self.db_chooser = DBChooser(
@@ -76,12 +77,17 @@ class SQLQuery(QWidget):
         )
         if self.db_chooser.populate():  # If databases were loaded successfully
             self.db_chooser.setCurrentIndex(0)  # Select the first item
-            self.update_db_tree_display(self.db_chooser.currentText())  # Update the tree display
+            self.current_database = self.db_chooser.currentText()  # Set the current database
+            self.update_db_tree_display(self.current_database)  # Update the tree display
 
-        # Connect the Combobox to the tree
-        self.db_chooser.currentTextChanged.connect(self.update_db_tree_display)
+        # Connect the Combobox to the tree and update current_database
+        self.db_chooser.currentTextChanged.connect(self.on_database_changed)
 
         self.initUI()
+
+    def on_database_changed(self, database: str) -> None:
+        self.current_database = database
+        self.update_db_tree_display(database)
 
     def initUI(self) -> None:
         splitter = QSplitter()
@@ -101,7 +107,7 @@ class SQLQuery(QWidget):
         return self.query_edit.toPlainText()
 
     def get_database(self) -> str:
-        return self.db_chooser.currentText()
+        return self.current_database or self.db_chooser.currentText()
 
     def update_db_tree_display(self, database: str) -> None:
         tables_and_fields = self.db_manager.get_tables_and_fields_and_types(database)
