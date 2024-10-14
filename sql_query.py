@@ -51,7 +51,9 @@ class SQLQueryEditor(QTextEdit):
         self.setPlaceholderText("Enter your SQL query here...")
 
     def set_default_query(self, database: str) -> None:
-        self.setText(f"SELECT * FROM information_schema.tables WHERE table_schema = 'public' AND table_catalog = '{database}';")
+        self.setText(
+            f"SELECT * FROM information_schema.tables WHERE table_schema = 'public' AND table_catalog = '{database}';"
+        )
 
 
 class SQLQuery(QWidget):
@@ -69,7 +71,9 @@ class SQLQuery(QWidget):
         self.read_only_tree = DBFieldsView(db_manager=self.db_manager)
         self.query_edit = SQLQueryEditor()
         self.status_bar = status_bar
-        self.current_database = None  # Add this line to keep track of the current database
+        self.current_database = (
+            None  # Add this line to keep track of the current database
+        )
 
         # DB Chooser
         self.db_chooser = DBChooser(
@@ -78,10 +82,7 @@ class SQLQuery(QWidget):
             status_bar=self.status_bar,
             text_changed_callbacks=on_db_choice_callbacks,
         )
-        if self.db_chooser.populate():  # If databases were loaded successfully
-            self.db_chooser.setCurrentIndex(0)  # Select the first item
-            self.current_database = self.db_chooser.currentText()  # Set the current database
-            self.update_db_tree_display(self.current_database)  # Update the tree display
+        self.refresh()
 
         # Connect the Combobox to the tree and update current_database
         self.db_chooser.currentTextChanged.connect(self.on_database_changed)
@@ -119,6 +120,16 @@ class SQLQuery(QWidget):
 
     def execute_custom_query(self, selected_database: str, query: str) -> None:
         self.db_manager.execute_custom_query(selected_database, query)
+
+    def refresh(self):
+        if self.db_chooser.populate():  # If databases were loaded successfully
+            self.db_chooser.setCurrentIndex(0)  # Select the first item
+            self.current_database = (
+                self.db_chooser.currentText()
+            )  # Set the current database
+            self.update_db_tree_display(
+                self.current_database
+            )  # Update the tree display
 
 
 class DBChooser(QComboBox):
@@ -165,6 +176,8 @@ class DBChooser(QComboBox):
         try:
             databases = self.db_manager.list_databases()
             self.addItems(databases)
+            # Select the first item
+            self.setCurrentIndex(0)
             return len(databases) > 0
         except Exception as e:
             self.log(f"Error listing databases: {str(e)}")

@@ -50,7 +50,7 @@ class MainWindow(QMainWindow):
 
     def setup_menu_bar(self) -> None:
         actions = [
-            ("Connect & List Databases", self.list_databases),
+            ("Connect to Database", self.list_databases),
             ("Refresh", self.refresh_databases),
             ("Create New Database", self.create_database),
             ("Delete Database", self.delete_database),
@@ -134,8 +134,7 @@ class MainWindow(QMainWindow):
             self.status_bar.showMessage("Databases listed")
 
             # Update the db_chooser
-            self.query_edit.db_chooser.clear()
-            self.query_edit.db_chooser.addItems(databases)
+            self.query_edit.refresh()
 
         except Exception as e:
             self.output_text_edit.append(f"Error listing databases: {str(e)}")
@@ -329,13 +328,17 @@ class MainWindow(QMainWindow):
                 # Check if the result is a tuple (indicating a SELECT query)
                 if isinstance(result, tuple) and len(result) == 2:
                     col_names, rows = result
-                    self.table_view.update_content(col_names, [list(row) for row in rows])
+                    self.table_view.update_content(
+                        col_names, [list(row) for row in rows]
+                    )
                     self.output_text_edit.clear()
                     if rows:
                         self.output_text_edit.append(
                             "Query executed successfully. Showing results in table view."
                         )
-                        self.output_text_edit.append(f"Number of rows returned: {len(rows)}")
+                        self.output_text_edit.append(
+                            f"Number of rows returned: {len(rows)}"
+                        )
                     else:
                         self.output_text_edit.append(
                             "Query executed successfully. No rows returned."
@@ -344,7 +347,9 @@ class MainWindow(QMainWindow):
                     # For non-SELECT queries (INSERT, UPDATE, DELETE, etc.)
                     self.table_view.setModel(None)  # Clear the table view
                     self.output_text_edit.clear()
-                    self.output_text_edit.append(f"Query executed successfully:\n{result}")
+                    self.output_text_edit.append(
+                        f"Query executed successfully:\n{result}"
+                    )
                 self.status_bar.showMessage("Query executed successfully")
             except Exception as e:
                 self.output_text_edit.clear()
