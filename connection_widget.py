@@ -1,13 +1,15 @@
 from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLabel, QLineEdit
+from typing import Dict, Any
+from database_manager import DatabaseManager
 
 
 class ConnectionWidget(QWidget):
-    def __init__(self, db_manager):
+    def __init__(self, db_manager: DatabaseManager) -> None:
         super().__init__()
         self.db_manager = db_manager
         self.initUI()
 
-    def initUI(self):
+    def initUI(self) -> None:
         layout = QHBoxLayout()
         self.host_edit = QLineEdit(self.db_manager.host)
         self.port_edit = QLineEdit(str(self.db_manager.port))
@@ -26,7 +28,7 @@ class ConnectionWidget(QWidget):
 
         self.setLayout(layout)
 
-    def get_connection_info(self):
+    def get_connection_info(self) -> Dict[str, Any]:
         return {
             "host": self.host_edit.text(),
             "port": int(self.port_edit.text()),
