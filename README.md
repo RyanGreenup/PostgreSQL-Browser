@@ -28,6 +28,15 @@ docker-compose logs -f
 pg_browser --host localhost --password postgres --username postgres --port 5432
 ```
 
+## Motivation
+
+I wanted to browse my [linkwarden](https://github.com/linkwarden/linkwarden) database, and I didn't want to use the command line, now I can simply:
+
+```python
+alias lw_db="pg_browser  --host localhost --password ${LW_DB_PASS} --username postgres --port 37194"
+lw_db
+```
+
 
 
 
