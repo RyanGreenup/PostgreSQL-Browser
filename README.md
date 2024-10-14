@@ -1,2 +1,5 @@
 # PostgreSQL-Browser
-Simple but efficient PyQt-6 interface for working with Postgres database functions.
+A PostgreSQL Browser, similar to SQLiteBrowser with far less features (for now).
+
+![](./screenshot_cli.png)
+![](./screenshot.png)
