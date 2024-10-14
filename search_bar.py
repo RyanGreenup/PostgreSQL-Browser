@@ -88,7 +88,10 @@ class SearchWidget(QWidget):
 
         if database := self.db_manager.current_database:
             result = self.db_manager.execute_custom_query(database, query, params=params)
-            if result is not None:  # Changed from 'if result:'
+            if result is not None:
+                # Convert string result to list of lists
+                if isinstance(result, str):
+                    result = [row.split(',') for row in result.strip().split('\n')]
                 self.search_performed.emit(table, result)
         else:
             issue_warning("No database selected", DatabaseWarning)
