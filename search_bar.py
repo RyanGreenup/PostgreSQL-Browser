@@ -17,7 +17,9 @@ class SearchWidget(QWidget):
         layout = QHBoxLayout()
         self.search_bar = QLineEdit()
         self.search_bar.setPlaceholderText("Search for a term")
-        self.search_bar.returnPressed.connect(self.search_db)
+        self.search_bar.textChanged.connect(self.search_db)
+        # TODO map this to CTL+SPACE
+        self.search_bar.returnPressed.connect(self.select_nothing)
 
         self.field_combo_box = QComboBox()
         self.field_combo_box.setPlaceholderText("Select a field")
@@ -25,6 +27,9 @@ class SearchWidget(QWidget):
         layout.addWidget(self.search_bar)
         layout.addWidget(self.field_combo_box)
         self.setLayout(layout)
+
+    def select_nothing(self):
+        self.field_combo_box.setCurrentIndex(-1)
 
     def update_field_combo_box(self):
         self.field_combo_box.clear()
@@ -58,7 +63,7 @@ class SearchWidget(QWidget):
         search_term = self.search_bar.text()
         field = self.field_combo_box.currentText()
         table = self.db_tree.get_selected_table()
-        
+
         if not table:
             issue_warning("No table selected", DatabaseWarning)
             return
