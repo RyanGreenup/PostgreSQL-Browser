@@ -76,20 +76,28 @@ class SearchWidget(QWidget):
         if not table:
             return  # Don't issue a warning, just return silently
 
-        if not field:
-            return  # Don't issue a warning, just return silently
-
         if database := self.db_manager.current_database:
             if not search_term:
                 # If search term is empty, fetch all rows
                 query = f'SELECT * FROM "{table}";'
                 params = None
             else:
-                query = f"""
-                SELECT * FROM "{table}"
-                WHERE "{field}" ILIKE %s;
-                """
-                params = (f"%{search_term}%",)
+                if field:
+                    # Search in a specific field
+                    query = f"""
+                    SELECT * FROM "{table}"
+                    WHERE "{field}" ILIKE %s;
+                    """
+                    params = (f"%{search_term}%",)
+                else:
+                    # Search across all fields
+                    fields = self.db_manager.get_tables_and_fields(database)[table]
+                    conditions = [f'"{f}" ILIKE %s' for f in fields]
+                    query = f"""
+                    SELECT * FROM "{table}"
+                    WHERE {" OR ".join(conditions)};
+                    """
+                    params = tuple(f"%{search_term}%" for _ in fields)
 
             result = self.db_manager.execute_custom_query(database, query, params=params)
             if isinstance(result, tuple) and len(result) == 2:
