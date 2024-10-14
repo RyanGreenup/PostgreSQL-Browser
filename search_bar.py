@@ -1,4 +1,5 @@
 from PyQt6.QtWidgets import QApplication, QComboBox, QHBoxLayout, QLineEdit, QWidget
+from PyQt6.QtCore import pyqtSignal
 import sys
 from database_manager import DatabaseManager
 from warning_types import issue_warning, DatabaseWarning
@@ -6,6 +7,8 @@ from gui_components import DBTablesTree
 
 
 class SearchWidget(QWidget):
+    search_performed = pyqtSignal(str, list)  # New signal
+
     def __init__(self, db_manager: DatabaseManager, db_tree: DBTablesTree):
         super().__init__()
         self.db_manager = db_manager
@@ -74,9 +77,11 @@ class SearchWidget(QWidget):
         """
         search_term = "%" + search_term + "%"
         if database := self.db_manager.current_database:
-            self.db_manager.execute_custom_query(
+            result = self.db_manager.execute_custom_query(
                 database, query, params=(search_term,)
             )
+            if result:
+                self.search_performed.emit(table, result)  # Emit the signal with the table name and result
         else:
             issue_warning("No database selected", DatabaseWarning)
 
