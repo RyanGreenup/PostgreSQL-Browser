@@ -183,37 +183,36 @@ class DatabaseManager:
         if self.connect(dbname):
             if conn := self.conn:
                 try:
-                    # Use a single cursor for the entire operation
                     with conn.cursor() as cur:
-                        tables = self.get_tables(dbname)
-                        tables_and_fields = dict()
+                        # Fetch tables
+                        cur.execute("""
+                            SELECT table_name
+                            FROM information_schema.tables
+                            WHERE table_schema = 'public'
+                        """)
+                        tables = [row[0] for row in cur.fetchall()]
+                        
+                        tables_and_fields = {}
                         for table in tables:
-                            cur.execute(
-                                """
+                            cur.execute("""
                                 SELECT column_name, data_type
                                 FROM information_schema.columns
                                 WHERE table_schema = 'public'
                                 AND table_name = %s
-                                """,
-                                (table,),
-                            )
-
-                            fields = [
-                                Field(name=column_name, type=data_type)
-                                for column_name, data_type in cur.fetchall()
-                            ]
+                            """, (table,))
+                            
+                            fields = [Field(name=column_name, type=data_type)
+                                      for column_name, data_type in cur.fetchall()]
                             tables_and_fields[table] = fields
-
+                        
+                        return tables_and_fields
                 except psycopg2.Error as e:
                     print(f"Error fetching tables and fields: {e}")
                     traceback.print_exc()
             else:
                 print("Unable to get cursor", file=sys.stderr)
                 traceback.print_exc()
-        else:
-            return {}
-
-        return tables_and_fields
+        return {}
 
     def get_tables_and_fields(self, dbname: str) -> Dict[str, List[str]]:
         """
