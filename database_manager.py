@@ -1,5 +1,4 @@
 import psycopg2
-import sys
 import traceback
 from warning_types import (
     DatabaseWarning,
@@ -15,7 +14,9 @@ from data_types import Field
 
 
 class DatabaseManager:
-    def __init__(self, host: str, port: int, username: str, password: str) -> None:
+    def __init__(
+        self, host: str, port: int, username: str, password: str | None
+    ) -> None:
         self.host = host
         self.port = port
         self.username = username
@@ -117,7 +118,7 @@ class DatabaseManager:
 
     def get_table_contents(
         self, dbname: str, table_name: str, limit: int = 1000
-    ) -> Tuple[List[str], List[Tuple[Any, ...]], bool]:
+    ) -> Tuple[List[str], List[List[Any]], bool]:
 
         if not self.connect(dbname):
             return [], [], False
@@ -136,28 +137,24 @@ class DatabaseManager:
                     """,
                         (table_name,),
                     )
-                    table_exists = cur.fetchone()[0]
 
+                    # Handle empty tables
+                    empty_val = [], [], False
+                    if not (row := cur.fetchone()):
+                        table_exists = False
+                    else:
+                        if not (table_exists := row[0]):
+                            return empty_val
                     if not table_exists:
-                        return [], [], False
-
-                    # Get column names
-                    cur.execute(
-                        """
-                        SELECT column_name
-                        FROM information_schema.columns
-                        WHERE table_schema = 'public'
-                        AND table_name = %s
-                    """,
-                        (table_name,),
-                    )
-                    col_names = [row[0] for row in cur.fetchall()]
+                        return empty_val
 
                     # Get table contents
                     cur.execute(f'SELECT * FROM "{table_name}" LIMIT %s', (limit,))
                     rows = cur.fetchall()
+                    # Make rows a list to conform to return type [fn_1]
+                    rows = [list(row) for row in rows]
 
-                    return col_names, rows, True
+                    return self.get_column_names(table_name, cur), rows, True
             except psycopg2.Error as e:
                 issue_warning(f"Error fetching table contents: {e}", TableWarning)
                 traceback.print_exc()
@@ -165,6 +162,20 @@ class DatabaseManager:
         else:
             issue_warning("Unable to get database connection", ConnectionWarning)
             return [], [], False
+
+    def get_column_names(self, table_name, cur) -> list[str]:
+        # Get column names
+        cur.execute(
+            """
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_schema = 'public'
+            AND table_name = %s
+        """,
+            (table_name,),
+        )
+
+        return [row[0] for row in cur.fetchall()]
 
     def execute_custom_query(
         self, dbname: str, query: str
@@ -182,9 +193,7 @@ class DatabaseManager:
                         self.conn.commit()
                         return columns, rows
                     else:
-                        result = (
-                            f"Query executed successfully. Rows affected: {cur.rowcount}"
-                        )
+                        result = f"Query executed successfully. Rows affected: {cur.rowcount}"
                         self.conn.commit()
                         return result
             except psycopg2.Error as e:
@@ -250,7 +259,9 @@ class DatabaseManager:
 
                         return tables_and_fields
                 except psycopg2.Error as e:
-                    issue_warning(f"Error fetching tables and fields: {e}", QueryWarning)
+                    issue_warning(
+                        f"Error fetching tables and fields: {e}", QueryWarning
+                    )
                     traceback.print_exc()
             else:
                 issue_warning("Unable to get cursor", ConnectionWarning)
@@ -282,3 +293,7 @@ class DatabaseManager:
 # else:
 #     # Handle no connection
 #     print("No database connection available.")
+
+# [fn_1]
+# Return type of "List[List[Any]]" required for the show_table_contents method in
+# main_window

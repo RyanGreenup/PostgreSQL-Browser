@@ -1,6 +1,7 @@
 from __future__ import annotations
+from warning_types import TreeWarning, issue_warning
 import traceback
-from typing import Callable, List, Dict, Tuple, Optional, Any
+from typing import Callable, List, Dict, Optional
 import sys
 from PyQt6.QtWidgets import (
     QMainWindow,
@@ -27,8 +28,8 @@ from connection_widget import ConnectionWidget
 class DBChooser(QComboBox):
     def __init__(
         self,
+        db_manager: DatabaseManager,
         parent: Optional[QWidget] = None,
-        db_manager: Optional[DatabaseManager] = None,
         output: Optional[QTextEdit] = None,
         status_bar: Optional[QStatusBar] = None,
         text_changed_callbacks: List[Callable[[str], None]] = [],
@@ -73,7 +74,9 @@ class DBChooser(QComboBox):
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, host: str, port: int, username: str, password: str) -> None:
+    def __init__(
+        self, host: str, port: int, username: str, password: str | None
+    ) -> None:
         super().__init__()
         self.db_manager = DatabaseManager(host, port, username, password)
         self.settings = QSettings("YourCompany", "PostgreSQLBrowser")
@@ -96,10 +99,6 @@ class MainWindow(QMainWindow):
         self.list_databases()
 
     def setup_menu_bar(self) -> None:
-        menubar = self.menuBar()
-        database_menu = menubar.addMenu("Database")
-        settings_menu = menubar.addMenu("Settings")
-
         actions = [
             ("Connect & List Databases", self.list_databases),
             ("Refresh", self.refresh_databases),
@@ -107,21 +106,27 @@ class MainWindow(QMainWindow):
             ("Delete Database", self.delete_database),
             ("Show Database Contents", self.show_database_contents),
         ]
+        if menubar := self.menuBar():
 
-        for action_text, action_slot in actions:
-            action = QAction(action_text, self)
-            action.triggered.connect(action_slot)
-            database_menu.addAction(action)
+            # Settings Menu
+            save_settings_action = QAction("Save Connection Settings", self)
+            save_settings_action.triggered.connect(self.save_connection_settings)
+            if settings_menu := menubar.addMenu("Settings"):
+                settings_menu.addAction(save_settings_action)
 
-        save_settings_action = QAction("Save Connection Settings", self)
-        save_settings_action.triggered.connect(self.save_connection_settings)
-        settings_menu.addAction(save_settings_action)
+            # Database Menu
+            for action_text, action_slot in actions:
+                action = QAction(action_text, self)
+                action.triggered.connect(action_slot)
+                if database_menu := menubar.addMenu("Database"):
+                    database_menu.addAction(action)
 
-        query_menu = menubar.addMenu("Query")
-        execute_query_action = QAction("Execute Query", self)
-        execute_query_action.triggered.connect(self.execute_custom_query)
-        execute_query_action.setShortcut("Ctrl+Return")  # Set the shortcut
-        query_menu.addAction(execute_query_action)
+            # Query Menu
+            execute_query_action = QAction("Execute Query", self)
+            execute_query_action.triggered.connect(self.execute_custom_query)
+            execute_query_action.setShortcut("Ctrl+Return")  # Set the shortcut
+            if query_menu := menubar.addMenu("Query"):
+                query_menu.addAction(execute_query_action)
 
     def setup_connection_widget(self, parent_layout: QVBoxLayout) -> None:
         self.connection_widget = ConnectionWidget(self.db_manager)
@@ -190,20 +195,44 @@ class MainWindow(QMainWindow):
         try:
             if selected_database:
                 # Get tables and fields for the selected database
-                tables_and_fields = self.db_manager.get_tables_and_fields(selected_database)
+                tables_and_fields = self.db_manager.get_tables_and_fields(
+                    selected_database
+                )
 
                 # Populate the tree with the selected database and its tables/fields
-                self.db_tree.populate([selected_database], {selected_database: [(table, "") for table in tables_and_fields.keys()]})
+                self.db_tree.populate(
+                    [selected_database],
+                    {
+                        selected_database: [
+                            (table, "") for table in tables_and_fields.keys()
+                        ]
+                    },
+                )
 
                 # Expand the selected database
-                root = self.db_tree.invisibleRootItem()
-                if root.childCount() > 0:
-                    db_item = root.child(0)
-                    db_item.setExpanded(True)
+                if root := self.db_tree.invisibleRootItem():
+                    if root.childCount() > 0:
+                        if db_item := root.child(0):
+                            db_item.setExpanded(True)
+                        else:
+                            issue_warning(
+                                message="Unable to get db_item from tree root",
+                                warning_class=TreeWarning,
+                            )
+                else:
+                    w = "Error updating database tree: No root item found"
+                    issue_warning(message=w, warning_class=TreeWarning)
+
             else:
                 # If no database is selected, show all databases
                 databases = self.db_manager.list_databases()
-                tables_dict = {db: [(table, "") for table in self.db_manager.get_tables_and_fields(db).keys()] for db in databases}
+                tables_dict = {
+                    db: [
+                        (table, "")
+                        for table in self.db_manager.get_tables_and_fields(db).keys()
+                    ]
+                    for db in databases
+                }
                 self.db_tree.populate(databases, tables_dict)
 
             self.output_text_edit.append("Database tree updated")
@@ -350,18 +379,20 @@ class MainWindow(QMainWindow):
                 # Check if the result is a tuple (indicating a SELECT query)
                 if isinstance(result, tuple) and len(result) == 2:
                     col_names, rows = result
-                    self.table_view.update_content(col_names, rows)
+                    self.table_view.update_content(
+                        col_names, [list(row) for row in rows]
+                    )
                     self.output_text_edit.clear()
                     if rows:
                         self.output_text_edit.append(
-                            f"Query executed successfully. Showing results in table view."
+                            "Query executed successfully. Showing results in table view."
                         )
                         self.output_text_edit.append(
-                            f"Number of rows returned: {len(rows)}"
+                            "Number of rows returned: {len(rows)}"
                         )
                     else:
                         self.output_text_edit.append(
-                            f"Query executed successfully. No rows returned."
+                            "Query executed successfully. No rows returned."
                         )
                 else:
                     # For non-SELECT queries (INSERT, UPDATE, DELETE, etc.)
@@ -371,10 +402,6 @@ class MainWindow(QMainWindow):
                         f"Query executed successfully:\n{result}"
                     )
                 self.status_bar.showMessage("Query executed successfully")
-
-                # Update the DBTreeDisplay after executing the query
-                print(f"{selected_database=}")
-                # self.update_db_tree_display(selected_database)
             except Exception as e:
                 self.output_text_edit.clear()
                 self.output_text_edit.append(f"Error executing query: {str(e)}")
@@ -423,7 +450,7 @@ class DBTreeDisplay(QTreeWidget):
         for table_name, fields in tables_and_fields.items():
             table_item = QTreeWidgetItem(root, [table_name])
             for field in fields:
-                field_item = QTreeWidgetItem(table_item, [field])
+                _field_item = QTreeWidgetItem(table_item, [field])
             table_item.setExpanded(True)
 
         self.expandAll()
