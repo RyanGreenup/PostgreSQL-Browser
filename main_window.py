@@ -43,7 +43,7 @@ class MainWindow(QMainWindow):
 
         self.setup_menu_bar()
         self.setup_connection_widget(main_layout)
-        self.setup_status_bar()  # Move this line before setup_main_area
+        self.setup_status_bar()  # This line before setup_main_area
         self.setup_main_area(main_layout)
 
         self.list_databases()
@@ -114,7 +114,7 @@ class MainWindow(QMainWindow):
 
         outer_splitter.addWidget(main_splitter)
         outer_splitter.addWidget(self.output_text_edit)
-        outer_splitter.setSizes([400, 200])
+        outer_splitter.setSizes([400, 100])
 
         parent_layout.addWidget(outer_splitter)
 
