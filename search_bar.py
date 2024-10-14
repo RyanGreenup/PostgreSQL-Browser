@@ -90,6 +90,7 @@ class SearchWidget(QWidget):
                     """
                     params = (f"%{search_term}%",)
                 else:
+                    # TODO this is not working
                     # Search across all fields
                     fields = self.db_manager.get_tables_and_fields(database)[table]
                     conditions = [f'"{f}" ILIKE %s' for f in fields]
