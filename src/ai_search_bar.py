@@ -2,8 +2,13 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout
 from PyQt6.QtCore import QUrl, pyqtSignal, pyqtSlot
 from PyQt6.QtQuickWidgets import QQuickWidget
 from database_manager import DatabaseManager
-from openai_query import OpenAIQueryManager, PromptResponse
+from openai_query import OpenAIQueryManager
+from dataclasses import dataclass
 
+@dataclass
+class PromptResponse:
+    user_input: str
+    ai_response: str
 
 class AiSearchBar(QWidget):
     search_requested = pyqtSignal(str)
