@@ -10,6 +10,11 @@ class PromptResponse:
     user_input: str
     ai_response: str
 
+@dataclass
+class PromptResponse:
+    user_input: str
+    ai_response: str
+
 class AiSearchBar(QWidget):
     search_requested = pyqtSignal(str)
 
