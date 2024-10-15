@@ -51,6 +51,23 @@ class DatabaseManager:
             unable_to_connect_to_database(e)
             return False
 
+    def get_current_schema(self) -> str | None:
+        """
+        Returns the current schema of the connected database.
+        By default, PostgreSQL uses 'public' as the default schema.
+        """
+        if not self.conn:
+            return None
+
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute("SELECT current_schema()")
+                result = cur.fetchone()
+                return result[0] if result else None
+        except psycopg2.Error as e:
+            issue_warning(f"Error fetching current schema: {e}", QueryWarning)
+            return None
+
     def list_databases(self) -> List[str]:
         if not self.connect():
             return []
