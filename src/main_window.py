@@ -110,7 +110,9 @@ class MainWindow(QMainWindow):
 
         right_side = QSplitter(Qt.Orientation.Vertical)
         self.table_view = TableView()
-        self.search_bar = AiSearchBar(self.db_manager, self.output_text_edit, openai_url=self.openai_url)
+        self.search_bar = AiSearchBar(
+            self.db_manager, self.output_text_edit, openai_url=self.openai_url
+        )
         self.setup_table_view_with_search(right_side)
 
         self.query_edit = SQLQuery(

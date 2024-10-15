@@ -5,10 +5,12 @@ from database_manager import DatabaseManager
 from openai_query import OpenAIQueryManager
 from dataclasses import dataclass
 
+
 @dataclass
 class PromptResponse:
     user_input: str
     ai_response: str
+
 
 class AiSearchBar(QWidget):
     search_requested = pyqtSignal(str)
@@ -34,16 +36,16 @@ class AiSearchBar(QWidget):
         # Create QQuickWidget
         self.quick_widget = QQuickWidget()
         self.quick_widget.setResizeMode(QQuickWidget.ResizeMode.SizeRootObjectToView)
-        
+
         # Load QML file
         self.quick_widget.setSource(QUrl.fromLocalFile("src/AiSearchBar.qml"))
-        
+
         # Get root object
         self.root = self.quick_widget.rootObject()
-        
+
         # Connect signals
         self.root.search.connect(self.on_search)
-        
+
         # Add QQuickWidget to layout
         layout.addWidget(self.quick_widget)
 
