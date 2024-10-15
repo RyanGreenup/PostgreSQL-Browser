@@ -58,7 +58,6 @@ class MainWindow(QMainWindow):
             ("Show Database Contents", self.show_database_contents),
         ]
         if menubar := self.menuBar():
-
             # Settings Menu
             save_settings_action = QAction("Save Connection Settings", self)
             save_settings_action.triggered.connect(self.save_connection_settings)
@@ -302,7 +301,9 @@ class MainWindow(QMainWindow):
                     self.show_table_contents(dbname, table_name)
 
     def show_table_contents(self, dbname: str, table_name: str) -> None:
-        col_names, rows, success = self.db_manager.get_table_contents( dbname, table_name)
+        col_names, rows, success = self.db_manager.get_table_contents(
+            dbname, table_name
+        )
         if success:
             self.table_view.update_content(col_names, rows)
             self.output_text_edit.clear()

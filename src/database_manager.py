@@ -121,7 +121,6 @@ class DatabaseManager:
     def get_table_contents(
         self, dbname: str, table_name: str, limit: int = 1000
     ) -> Tuple[List[str], List[List[Any]], bool]:
-
         if not self.connect(dbname):
             return [], [], False
 
@@ -180,7 +179,7 @@ class DatabaseManager:
         return [row[0] for row in cur.fetchall()]
 
     def execute_custom_query(
-            self, dbname: str, query: str, params: Tuple[str, ...] | None = None
+        self, dbname: str, query: str, params: Tuple[str, ...] | None = None
     ) -> Union[str, Tuple[List[str], List[Tuple[Any, ...]]]]:
         if not self.connect(dbname):
             issue_warning("Unable to get database connection", ConnectionWarning)

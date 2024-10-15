@@ -10,7 +10,9 @@ from gui_components import DBTablesTree
 class SearchWidget(QWidget):
     search_performed = pyqtSignal(str, list)  # New signal
 
-    def __init__(self, db_manager: DatabaseManager, db_tree: DBTablesTree, table_view: TableView):
+    def __init__(
+        self, db_manager: DatabaseManager, db_tree: DBTablesTree, table_view: TableView
+    ):
         super().__init__()
         self.db_manager = db_manager
         self.db_tree = db_tree
@@ -100,15 +102,14 @@ class SearchWidget(QWidget):
                     """
                     params = tuple(f"%{search_term}%" for _ in fields)
 
-            result = self.db_manager.execute_custom_query(database, query, params=params)
+            result = self.db_manager.execute_custom_query(
+                database, query, params=params
+            )
             if isinstance(result, tuple) and len(result) == 2:
                 columns, rows = result
-                self.table_view.update_content(
-                    columns, [list(row) for row in rows]
-                )
+                self.table_view.update_content(columns, [list(row) for row in rows])
         else:
             issue_warning("No database selected", DatabaseWarning)
-
 
 
 if __name__ == "__main__":
