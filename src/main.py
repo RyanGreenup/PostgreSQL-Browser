@@ -18,9 +18,10 @@ def main(
     password: Optional[str] = typer.Option(
         None, help="Database password", prompt=True, hide_input=True
     ),
+    openai_url: str = typer.Option("http://localhost:11434", help="OpenAI API URL"),
 ) -> None:
     qt_app = QApplication(sys.argv)
-    main_window = MainWindow(host, port, username, password)
+    main_window = MainWindow(host, port, username, password, openai_url)
     main_window.show()
     sys.exit(qt_app.exec())
 

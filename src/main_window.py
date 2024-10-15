@@ -27,9 +27,15 @@ from connection_widget import ConnectionWidget
 
 class MainWindow(QMainWindow):
     def __init__(
-        self, host: str, port: int, username: str, password: str | None
+        self,
+        host: str,
+        port: int,
+        username: str,
+        password: str | None,
+        openai_url: str = "http://localhost:11434",
     ) -> None:
         super().__init__()
+        self.openai_url = openai_url
         self.db_manager = DatabaseManager(host, port, username, password)
         self.settings = QSettings("YourCompany", "PostgreSQLBrowser")
         self.initUI()
@@ -114,6 +120,7 @@ class MainWindow(QMainWindow):
             on_db_choice_callbacks=[],
             output=self.output_text_edit,
             status_bar=self.status_bar,
+            openai_url=self.openai_url,
         )
         right_side.addWidget(self.query_edit)
 

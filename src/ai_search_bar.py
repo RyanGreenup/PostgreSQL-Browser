@@ -7,7 +7,7 @@ from collections import namedtuple
 PromptResponse = namedtuple("Chat", ["user_input", "ai_response"])
 
 # TODO use a combo box for models
-MODEL = "phi3"
+MODEL = "qwen2.5-coder:7b"
 
 
 class AiSearchBar(QWidget):
@@ -17,6 +17,7 @@ class AiSearchBar(QWidget):
         self,
         db_manager: DatabaseManager,
         text_edit: QTextEdit,
+        openai_url: str = "http://localhost:11434",
         parent=None,
     ):
         super().__init__(parent)
@@ -24,7 +25,7 @@ class AiSearchBar(QWidget):
         self.db_manager = db_manager
         # TODO allow the user to specify the URL
         self.text_edit = text_edit
-        self.open_ai_query_manager = OpenAIQueryManager(url="http://localhost:11434")
+        self.open_ai_query_manager = OpenAIQueryManager(url=openai_url)
         self.chat_history = []
 
     def set_chat_history(self, message_and_response: PromptResponse):

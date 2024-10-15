@@ -65,6 +65,7 @@ class SQLQuery(QWidget):
         parent: Optional[QWidget] = None,
         output: Optional[QTextEdit] = None,
         status_bar: Optional[QStatusBar] = None,
+        openai_url: str = "http://localhost:11434",
     ) -> None:
         self.output = output  # TODO rename as output log
         super().__init__(parent)
@@ -76,7 +77,9 @@ class SQLQuery(QWidget):
         self.current_database = (
             None  # Add this line to keep track of the current database
         )
-        self.ai_search_bar = AiSearchBar(self.db_manager, self.query_edit)
+        self.ai_search_bar = AiSearchBar(
+            self.db_manager, self.query_edit, openai_url=openai_url
+        )
 
         # DB Chooser
         self.db_chooser = DBChooser(
