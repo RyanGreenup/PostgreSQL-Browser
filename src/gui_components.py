@@ -3,7 +3,6 @@ from data_types import Field
 from PyQt6.QtWidgets import QTreeWidget, QTreeWidgetItem, QTableView, QWidget
 from PyQt6.QtGui import QStandardItemModel, QStandardItem
 from database_manager import DatabaseManager
-from data_types import Field
 
 
 class DBTablesTree(QTreeWidget):
@@ -79,7 +78,7 @@ class DBFieldsView(QTreeWidget):
         return tables
 
     def on_item_clicked(self, item: QTreeWidgetItem) -> None:
-        table_name = self.get_table_name(item)
+        _table_name = self.get_table_name(item)
         fields = self.get_tables_and_fields()
         self.populate(fields)
 

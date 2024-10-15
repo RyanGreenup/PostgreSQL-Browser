@@ -1,5 +1,4 @@
 from __future__ import annotations
-from warning_types import TreeWarning, issue_warning
 from typing import Callable, List, Dict, Optional
 import sys
 from PyQt6.QtWidgets import (

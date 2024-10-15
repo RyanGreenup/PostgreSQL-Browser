@@ -116,6 +116,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     db_manager = DatabaseManager("localhost", 5432, "postgres", "password")
     db_tree = DBTablesTree()
-    widget = SearchWidget(db_manager, db_tree)
+    table_view = TableView()
+    widget = SearchWidget(db_manager, db_tree, table_view)
     widget.show()
     sys.exit(app.exec())
