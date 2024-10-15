@@ -1,5 +1,5 @@
 from __future__ import annotations
-from search_bar import SearchWidget
+from ai_search_bar import AiSearchBar
 from warning_types import TreeWarning, issue_warning
 import traceback
 from sql_query import SQLQuery
@@ -108,7 +108,7 @@ class MainWindow(QMainWindow):
 
         right_side = QSplitter(Qt.Orientation.Vertical)
         self.table_view = TableView()
-        self.search_bar = SearchWidget(self.db_manager, self.db_tree, self.table_view)
+        self.search_bar = AiSearchBar(self.db_manager, self.output_text_edit, openai_url=self.openai_url)
         self.setup_table_view_with_search(right_side)
 
         # Create output_text_edit before using it
