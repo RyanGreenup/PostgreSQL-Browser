@@ -18,6 +18,7 @@ from PyQt6.QtWidgets import (
 
 from PyQt6.QtCore import Qt, QSettings
 from PyQt6.QtGui import QAction
+from PyQt6.QtGui import QAction
 
 from database_manager import DatabaseManager
 from gui_components import DBTablesTree, TableView
@@ -48,6 +49,41 @@ class MainWindow(QMainWindow):
         self.setup_main_area(main_layout)
 
         self.list_databases()
+
+    def setup_menu_bar(self) -> None:
+        actions = [
+            ("Connect to Database", self.list_databases),
+            ("Refresh", self.refresh_databases),
+            ("Create New Database", self.create_database),
+            ("Delete Database", self.delete_database),
+            ("Show Database Contents", self.show_database_contents),
+        ]
+        if menubar := self.menuBar():
+            # Settings Menu
+            save_settings_action = QAction("Save Connection Settings", self)
+            save_settings_action.triggered.connect(self.save_connection_settings)
+            if settings_menu := menubar.addMenu("Settings"):
+                settings_menu.addAction(save_settings_action)
+
+            # Database Menu
+            if database_menu := menubar.addMenu("Database"):
+                for action_text, action_slot in actions:
+                    action = QAction(action_text, self)
+                    action.triggered.connect(action_slot)
+                    database_menu.addAction(action)
+
+            # Query Menu
+            execute_query_action = QAction("Execute Query", self)
+            execute_query_action.triggered.connect(self.execute_custom_query)
+            execute_query_action.setShortcut("Ctrl+Return")  # Set the shortcut
+            if query_menu := menubar.addMenu("Query"):
+                query_menu.addAction(execute_query_action)
+
+            # View Menu
+            if view_menu := menubar.addMenu("View"):
+                show_schema_action = QAction("Show Current Schema", self)
+                show_schema_action.triggered.connect(self.show_schema_popup)
+                view_menu.addAction(show_schema_action)
 
     def setup_menu_bar(self) -> None:
         actions = [
@@ -373,6 +409,14 @@ class MainWindow(QMainWindow):
             )
             self.status_bar.showMessage("No database selected")
             self.table_view.setModel(None)  # Clear the table view
+
+    def show_schema_popup(self) -> None:
+        schema = self.db_manager.get_current_schema()
+        if schema:
+            popup = SchemaPopup(schema, self)
+            popup.exec()
+        else:
+            QMessageBox.warning(self, "Error", "Unable to fetch current schema.")
 
     def save_connection_settings(self) -> None:
         connection_info = self.connection_widget.get_connection_info()
