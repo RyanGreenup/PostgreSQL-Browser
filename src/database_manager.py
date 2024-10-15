@@ -1,4 +1,5 @@
 import psycopg2
+import json
 import traceback
 from warning_types import (
     DatabaseWarning,
@@ -8,6 +9,7 @@ from warning_types import (
     issue_warning,
     unable_to_connect_to_database,
 )
+from schema_popup import SchemaPopup
 from psycopg2.extensions import connection as PsycopgConnection
 from typing import Optional, List, Tuple, Union, Dict, Any
 from data_types import Field
@@ -57,13 +59,38 @@ class DatabaseManager:
         By default, PostgreSQL uses 'public' as the default schema.
         """
         if not self.conn:
+            issue_warning("No database connection available.", ConnectionWarning)
             return None
 
         try:
-            with self.conn.cursor() as cur:
-                cur.execute("SELECT current_schema()")
-                result = cur.fetchone()
-                return result[0] if result else None
+            with self.conn.cursor() as cursor:
+                # Retrieve table names from the public schema
+                cursor.execute("""
+                    SELECT table_name
+                    FROM information_schema.tables
+                    WHERE table_schema = 'public'
+                    ORDER BY table_name;
+                """)
+                tables = cursor.fetchall()
+
+                # Iterate over each table to get its columns and types
+                schema = {}
+                for table in tables:
+                    table_name = table[0]
+                    cursor.execute(
+                        """
+                        SELECT column_name, data_type
+                        FROM information_schema.columns
+                        WHERE table_name = %s
+                        ORDER BY ordinal_position;
+                    """,
+                        (table_name,),
+                    )
+                    columns = cursor.fetchall()
+
+                    schema[table_name] = columns
+
+                return json.dumps(schema, indent=4)
         except psycopg2.Error as e:
             issue_warning(f"Error fetching current schema: {e}", QueryWarning)
             return None
