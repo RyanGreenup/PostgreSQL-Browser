@@ -181,3 +181,4 @@ class DBChooser(QComboBox):
         except Exception as e:
             self.log(f"Error listing databases: {str(e)}")
             return False
+
