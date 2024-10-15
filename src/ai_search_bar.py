@@ -1,13 +1,10 @@
-from PyQt6.QtWidgets import QTextEdit, QWidget, QLineEdit, QPushButton, QHBoxLayout
+from PyQt6.QtWidgets import QTextEdit, QWidget, QLineEdit, QPushButton, QHBoxLayout, QComboBox
 from PyQt6.QtCore import pyqtSignal
 from database_manager import DatabaseManager
 from openai_query import OpenAIQueryManager
 from collections import namedtuple
 
 PromptResponse = namedtuple("Chat", ["user_input", "ai_response"])
-
-# TODO use a combo box for models
-MODEL = "qwen2.5-coder:7b"
 
 
 class AiSearchBar(QWidget):
@@ -27,6 +24,7 @@ class AiSearchBar(QWidget):
         self.text_edit = text_edit
         self.open_ai_query_manager = OpenAIQueryManager(url=openai_url)
         self.chat_history = []
+        self.model_combo = None
 
     def list_models(self) -> list[str]:
         return self.open_ai_query_manager.get_available_models()
@@ -51,12 +49,17 @@ class AiSearchBar(QWidget):
         self.search_bar.setPlaceholderText("Enter your AI search query...")
         self.search_bar.returnPressed.connect(self.on_search)
 
+        # Create the model selection combo box
+        self.model_combo = QComboBox()
+        self.model_combo.addItems(self.list_models())
+        
         # Create the search button
         self.search_button = QPushButton("AI Search")
         self.search_button.clicked.connect(self.on_search)
 
         # Add widgets to the layout
         layout.addWidget(self.search_bar)
+        layout.addWidget(self.model_combo)
         layout.addWidget(self.search_button)
 
         # Set layout margins and spacing
@@ -66,19 +69,19 @@ class AiSearchBar(QWidget):
     def on_search(self):
         # TODO Notify user to wait.
         self.text = self.search_bar.text()
-        out = self.get_result(self.text)
+        selected_model = self.model_combo.currentText()
+        out = self.get_result(self.text, selected_model)
         self.text_edit.setPlainText(out)
         self.set_chat_history(PromptResponse(self.text, out))
 
-    def get_result(self, query: str) -> str | None:
+    def get_result(self, query: str, model: str) -> str | None:
         # TODO handle injecting history
-        # TODO Use a combo box for models
         # TODO consider the max_tokens parameter
         # TODO it doesn't seem to be getting the schema
         schema = self.db_manager.get_current_schema()
         if schema:
             return self.open_ai_query_manager.chat_completion_from_schema(
-                schema, MODEL, query, max_tokens=300
+                schema, model, query, max_tokens=300
             )
         return schema
 
