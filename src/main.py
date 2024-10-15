@@ -1,7 +1,9 @@
+#!/usr/bin/env python3
 import sys
+import signal
 from PyQt6.QtWidgets import QApplication
 import typer
-from typing import Optional, Any
+from typing import Optional
 
 from main_window import MainWindow
 
@@ -24,4 +26,5 @@ def main(
 
 
 if __name__ == "__main__":
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
     app()
