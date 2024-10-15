@@ -1,5 +1,4 @@
 import os
-import pyperclip
 import requests
 from collections import namedtuple
 from warning_types import issue_warning, OpenAIWarning
@@ -105,17 +104,44 @@ class OpenAIQueryManager:
         lines_without_code_fence = [li for li in lines if code_fence not in li.strip()]
         return "\n".join(lines_without_code_fence)
 
+    def get_ollama_models(self) -> list[str]:
+        api_url = f"{self.url}/api/tags"
+        response = requests.get(api_url)
+        if response.status_code == 200:
+            try:
+                model_and_size = [
+                    (m["name"], m["size"]) for m in response.json()["models"]
+                ]
+                # sort by size
+                model_and_size.sort(key=lambda x: x[1])
+                # Return only the model names
+                return [m[0] for m in model_and_size]
+            except Exception as e:
+                issue_warning(
+                    f"Failed to retrieve available Ollama models: {str(e)}",
+                    OpenAIWarning,
+                )
+                return []
+        else:
+            issue_warning(
+                f"{response.status_code} Error Failed to retrieve available Ollama models",
+                OpenAIWarning,
+            )
+            return []
+
     def get_available_models(self) -> list[str]:
+        models = self.get_ollama_models()
         api_url = f"{self.url}/v1/models"
         try:
             response = self.make_request(api_url, payload={})
             models = [model["id"] for model in response.get("data", [])]
+            models += self.get_ollama_models()
             return sorted(models)
         except Exception as e:
             issue_warning(
                 f"Failed to retrieve available models: {str(e)}", OpenAIWarning
             )
-            return []
+            return models
 
     @staticmethod
     def build_prompt_from_schema(schema: str, message: str) -> Message:
@@ -186,7 +212,7 @@ class OpenAIQueryManager:
         output_query = self.chat_response_to_string(response)
         if not output_query:
             issue_warning("No response from chat completion", OpenAIWarning)
-        pyperclip.copy(prompt)
+        # pyperclip.copy(prompt)
         print("## System")
         print(prompt.system)
         print("## user")

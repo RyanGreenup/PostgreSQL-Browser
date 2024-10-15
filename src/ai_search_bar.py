@@ -1,4 +1,11 @@
-from PyQt6.QtWidgets import QTextEdit, QWidget, QLineEdit, QPushButton, QHBoxLayout, QComboBox
+from PyQt6.QtWidgets import (
+    QTextEdit,
+    QWidget,
+    QLineEdit,
+    QPushButton,
+    QHBoxLayout,
+    QComboBox,
+)
 from PyQt6.QtCore import pyqtSignal
 from database_manager import DatabaseManager
 from openai_query import OpenAIQueryManager
@@ -18,13 +25,12 @@ class AiSearchBar(QWidget):
         parent=None,
     ):
         super().__init__(parent)
-        self.initUI()
         self.db_manager = db_manager
         # TODO allow the user to specify the URL
         self.text_edit = text_edit
         self.open_ai_query_manager = OpenAIQueryManager(url=openai_url)
         self.chat_history = []
-        self.model_combo = None
+        self.initUI()
 
     def list_models(self) -> list[str]:
         return self.open_ai_query_manager.get_available_models()
@@ -52,7 +58,7 @@ class AiSearchBar(QWidget):
         # Create the model selection combo box
         self.model_combo = QComboBox()
         self.model_combo.addItems(self.list_models())
-        
+
         # Create the search button
         self.search_button = QPushButton("AI Search")
         self.search_button.clicked.connect(self.on_search)
@@ -66,11 +72,13 @@ class AiSearchBar(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(5)
 
+    def get_model(self):
+        return self.model_combo.currentText()
+
     def on_search(self):
         # TODO Notify user to wait.
         self.text = self.search_bar.text()
-        selected_model = self.model_combo.currentText()
-        out = self.get_result(self.text, selected_model)
+        out = self.get_result(self.text, self.get_model())
         self.text_edit.setPlainText(out)
         self.set_chat_history(PromptResponse(self.text, out))
 
