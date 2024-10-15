@@ -28,6 +28,9 @@ class AiSearchBar(QWidget):
         self.open_ai_query_manager = OpenAIQueryManager(url=openai_url)
         self.chat_history = []
 
+    def list_models(self) -> list[str]:
+        return self.open_ai_query_manager.get_available_models()
+
     def set_chat_history(self, message_and_response: PromptResponse):
         self.chat_history.append(message_and_response)
 
