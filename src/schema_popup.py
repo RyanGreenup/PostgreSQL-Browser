@@ -1,6 +1,7 @@
-from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton
+from PyQt6.QtWidgets import QDialog, QTextEdit, QVBoxLayout, QLabel, QPushButton
 from PyQt6.QtCore import Qt
 import pyperclip
+
 
 class SchemaPopup(QDialog):
     def __init__(self, schema: str, parent=None):
@@ -12,7 +13,8 @@ class SchemaPopup(QDialog):
         self.setWindowTitle("Current Schema")
         layout = QVBoxLayout()
 
-        schema_label = QLabel(f"Current Schema: {self.schema}")
+        schema_label = QTextEdit()
+        schema_label.setPlainText(self.schema)
         schema_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(schema_label)
 
@@ -20,7 +22,12 @@ class SchemaPopup(QDialog):
         copy_button.clicked.connect(self.copy_to_clipboard)
         layout.addWidget(copy_button)
 
+        # Set the size
+        self.resize(800, 600)
+
         self.setLayout(layout)
 
     def copy_to_clipboard(self):
         pyperclip.copy(self.schema)
+
+
