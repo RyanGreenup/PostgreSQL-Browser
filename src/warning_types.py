@@ -2,9 +2,11 @@ import warnings
 import traceback
 from typing import Optional
 
+
 # Write OPENAI Warning class
 class OpenAIWarning(Warning):
     """Base class for OpenAI-related warnings."""
+
 
 # Define custom warning classes
 class DatabaseWarning(Warning):

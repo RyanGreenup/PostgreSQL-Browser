@@ -8,6 +8,7 @@ from pygments import highlight
 from pygments.lexers import JsonLexer
 from pygments.formatters import HtmlFormatter
 
+
 class JsonSyntaxHighlighter(QSyntaxHighlighter):
     def __init__(self, parent):
         super().__init__(parent)
@@ -40,6 +41,7 @@ class JsonSyntaxHighlighter(QSyntaxHighlighter):
                 start, end = match.span()
                 self.setFormat(start, end - start, format)
 
+
 class SchemaPopup(QDialog):
     def __init__(self, schema: str, parent=None):
         super().__init__(parent)
@@ -53,17 +55,19 @@ class SchemaPopup(QDialog):
         self.schema_text_edit = QTextEdit()
         self.schema_text_edit.setReadOnly(True)
         self.schema_text_edit.setFont(QFont("Courier", 10))
-        
+
         # Pretty print and highlight JSON
         try:
             json_obj = json.loads(self.schema)
             formatted_json = json.dumps(json_obj, indent=2)
-            highlighted_json = highlight(formatted_json, JsonLexer(), HtmlFormatter(style='default'))
+            highlighted_json = highlight(
+                formatted_json, JsonLexer(), HtmlFormatter(style="default")
+            )
             self.schema_text_edit.setHtml(highlighted_json)
         except json.JSONDecodeError:
             # If it's not valid JSON, just set the plain text
             self.schema_text_edit.setPlainText(self.schema)
-        
+
         # Apply custom syntax highlighter
         self.highlighter = JsonSyntaxHighlighter(self.schema_text_edit.document())
 
@@ -78,5 +82,3 @@ class SchemaPopup(QDialog):
 
     def copy_to_clipboard(self):
         pyperclip.copy(self.schema_text_edit.toPlainText())
-
-
