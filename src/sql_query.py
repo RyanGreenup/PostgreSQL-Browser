@@ -12,8 +12,8 @@ from PyQt6.QtWidgets import (
     QTreeWidgetItem,
     QComboBox,
 )
-
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QUrl
+from PyQt6.QtQuickWidgets import QQuickWidget
 
 from database_manager import DatabaseManager
 from gui_components import DBFieldsView
@@ -80,6 +80,18 @@ class SQLQuery(QWidget):
         self.ai_search_bar = AiSearchBar(
             self.db_manager, self.query_edit, openai_url=openai_url
         )
+        
+        # Create QQuickWidget for AiSearchBar
+        self.ai_search_widget = QQuickWidget()
+        self.ai_search_widget.setResizeMode(QQuickWidget.ResizeMode.SizeRootObjectToView)
+        self.ai_search_widget.setSource(QUrl.fromLocalFile("src/AiSearchBar.qml"))
+        self.ai_search_root = self.ai_search_widget.rootObject()
+        
+        # Connect signals
+        self.ai_search_root.search.connect(self.ai_search_bar.on_search)
+        
+        # Populate models
+        self.ai_search_root.setProperty("models", self.ai_search_bar.list_models())
 
         # DB Chooser
         self.db_chooser = DBChooser(
@@ -111,7 +123,7 @@ class SQLQuery(QWidget):
 
         search_layout = QHBoxLayout()
         search_layout.addWidget(self.db_chooser)
-        search_layout.addWidget(self.ai_search_bar)
+        search_layout.addWidget(self.ai_search_widget)
         layout.addLayout(search_layout)
         self.setLayout(layout)
 
