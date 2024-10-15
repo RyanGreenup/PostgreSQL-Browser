@@ -81,6 +81,12 @@ class MainWindow(QMainWindow):
                 query_menu.addAction(execute_query_action)
 
             # View Menu
+            view_menu = menubar.addMenu('View')
+            show_schema_action = QAction('Show Current Schema', self)
+            show_schema_action.triggered.connect(self.show_schema_popup)
+            view_menu.addAction(show_schema_action)
+
+            # View Menu
             if view_menu := menubar.addMenu("View"):
                 show_schema_action = QAction("Show Current Schema", self)
                 show_schema_action.triggered.connect(self.show_schema_popup)
