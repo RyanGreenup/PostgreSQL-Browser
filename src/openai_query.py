@@ -85,6 +85,16 @@ class OpenAIQueryManager:
         lines_without_code_fence = [li for li in lines if code_fence not in li.strip()]
         return "\n".join(lines_without_code_fence)
 
+    def get_available_models(self) -> list[str]:
+        api_url = f"{self.url}/v1/models"
+        try:
+            response = self.make_request(api_url, payload={})
+            models = [model['id'] for model in response.get('data', [])]
+            return sorted(models)
+        except Exception as e:
+            issue_warning(f"Failed to retrieve available models: {str(e)}", OpenAIWarning)
+            return []
+
     @staticmethod
     def build_prompt_from_schema(schema: str, message: str) -> Message:
         system = """
@@ -138,3 +148,9 @@ if __name__ == "__main__":
     )
     response = query_manager.chat_response_to_string(response)
     print(response)
+
+    # Get available models
+    available_models = query_manager.get_available_models()
+    print("Available models:")
+    for model in available_models:
+        print(f"- {model}")
