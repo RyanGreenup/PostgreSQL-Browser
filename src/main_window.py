@@ -52,6 +52,8 @@ class MainWindow(QMainWindow):
         self.setup_menu_bar()
         self.setup_connection_widget(main_layout)
         self.setup_status_bar()  # This line before setup_main_area
+        self.output_text_edit = QTextEdit()
+        self.output_text_edit.setReadOnly(True)
         self.setup_main_area(main_layout)
 
         self.list_databases()
@@ -110,10 +112,6 @@ class MainWindow(QMainWindow):
         self.table_view = TableView()
         self.search_bar = AiSearchBar(self.db_manager, self.output_text_edit, openai_url=self.openai_url)
         self.setup_table_view_with_search(right_side)
-
-        # Create output_text_edit before using it
-        self.output_text_edit = QTextEdit()
-        self.output_text_edit.setReadOnly(True)
 
         self.query_edit = SQLQuery(
             db_manager=self.db_manager,
