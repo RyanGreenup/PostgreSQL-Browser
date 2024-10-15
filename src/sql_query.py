@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import Callable, List, Dict, Optional
 import sys
 from PyQt6.QtWidgets import (
+    QHBoxLayout,
     QVBoxLayout,
     QWidget,
     QStatusBar,
@@ -16,6 +17,7 @@ from PyQt6.QtCore import Qt
 
 from database_manager import DatabaseManager
 from gui_components import DBFieldsView
+from ai_search_bar import AiSearchBar
 
 
 class DBTreeDisplay(QTreeWidget):
@@ -68,11 +70,13 @@ class SQLQuery(QWidget):
         super().__init__(parent)
         self.db_manager = db_manager
         self.read_only_tree = DBFieldsView(db_manager=self.db_manager)
+        # TODO add SQL Syntax Highlighting
         self.query_edit = SQLQueryEditor()
         self.status_bar = status_bar
         self.current_database = (
             None  # Add this line to keep track of the current database
         )
+        self.ai_search_bar = AiSearchBar(self.db_manager, self.query_edit)
 
         # DB Chooser
         self.db_chooser = DBChooser(
@@ -100,7 +104,12 @@ class SQLQuery(QWidget):
         splitter.setSizes([600, 200])
         layout = QVBoxLayout()
         layout.addWidget(splitter)
-        layout.addWidget(self.db_chooser)
+        # layout.addWidget(self.db_chooser)
+
+        search_layout = QHBoxLayout()
+        search_layout.addWidget(self.db_chooser)
+        search_layout.addWidget(self.ai_search_bar)
+        layout.addLayout(search_layout)
         self.setLayout(layout)
 
     def toPlainText(self) -> str:
@@ -181,4 +190,3 @@ class DBChooser(QComboBox):
         except Exception as e:
             self.log(f"Error listing databases: {str(e)}")
             return False
-

@@ -1,12 +1,42 @@
-from PyQt6.QtWidgets import QWidget, QLineEdit, QPushButton, QHBoxLayout
+from PyQt6.QtWidgets import QTextEdit, QWidget, QLineEdit, QPushButton, QHBoxLayout
 from PyQt6.QtCore import pyqtSignal
+from database_manager import DatabaseManager
+from openai_query import OpenAIQueryManager
+from collections import namedtuple
+
+PromptResponse = namedtuple("Chat", ["user_input", "ai_response"])
+
+# TODO use a combo box for models
+MODEL = "phi3"
+
 
 class AiSearchBar(QWidget):
     search_requested = pyqtSignal(str)
 
-    def __init__(self, parent=None):
+    def __init__(
+        self,
+        db_manager: DatabaseManager,
+        text_edit: QTextEdit,
+        parent=None,
+    ):
         super().__init__(parent)
         self.initUI()
+        self.db_manager = db_manager
+        # TODO allow the user to specify the URL
+        self.text_edit = text_edit
+        self.open_ai_query_manager = OpenAIQueryManager(url="http://localhost:11434")
+        self.chat_history = []
+
+    def set_chat_history(self, message_and_response: PromptResponse):
+        self.chat_history.append(message_and_response)
+
+    def get_chat_history(self):
+        message = ""
+        for chat in self.chat_history:
+            message += f"# User: {chat.user_input}\n# Assistant: {chat.ai_response}\n\n"
+
+    def clear_chat_history(self):
+        self.chat_history.clear()
 
     def initUI(self):
         layout = QHBoxLayout()
@@ -30,9 +60,23 @@ class AiSearchBar(QWidget):
         layout.setSpacing(5)
 
     def on_search(self):
-        query = self.search_bar.text()
-        if query:
-            self.search_requested.emit(query)
+        # TODO Notify user to wait.
+        self.text = self.search_bar.text()
+        out = self.get_result(self.text)
+        self.text_edit.setPlainText(out)
+        self.set_chat_history(PromptResponse(self.text, out))
+
+    def get_result(self, query: str) -> str | None:
+        # TODO handle injecting history
+        # TODO Use a combo box for models
+        # TODO consider the max_tokens parameter
+        # TODO it doesn't seem to be getting the schema
+        schema = self.db_manager.get_current_schema()
+        if schema:
+            return self.open_ai_query_manager.chat_completion_from_schema(
+                schema, MODEL, query, max_tokens=300
+            )
+        return schema
 
     def clear(self):
         self.search_bar.clear()

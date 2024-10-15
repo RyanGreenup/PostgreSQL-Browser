@@ -19,7 +19,6 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, QSettings
 from PyQt6.QtGui import QAction
 from schema_popup import SchemaPopup
-from PyQt6.QtGui import QAction
 
 from database_manager import DatabaseManager
 from gui_components import DBTablesTree, TableView

@@ -1,5 +1,7 @@
 import psycopg2
 import json
+import io
+from sqlalchemy import create_engine, MetaData
 import traceback
 from warning_types import (
     DatabaseWarning,
@@ -9,7 +11,6 @@ from warning_types import (
     issue_warning,
     unable_to_connect_to_database,
 )
-from schema_popup import SchemaPopup
 from psycopg2.extensions import connection as PsycopgConnection
 from typing import Optional, List, Tuple, Union, Dict, Any
 from data_types import Field
@@ -25,6 +26,10 @@ class DatabaseManager:
         self.password = password
         self.conn: Optional[PsycopgConnection] = None
         self.current_database: str | None = None
+
+    def get_url(self) -> str:
+        dbname = self.current_database
+        return f"postgresql://{self.username}:{self.password}@{self.host}:{self.port}/{dbname}"
 
     def update_connection(
         self, host: str, port: int, username: str, password: str
@@ -53,7 +58,27 @@ class DatabaseManager:
             unable_to_connect_to_database(e)
             return False
 
+    def dump_schema(self) -> str:
+        db_url = self.get_url()
+        engine = create_engine(db_url)
+        metadata = MetaData()
+        metadata.reflect(engine)
+        buf = io.BytesIO()
+
+        def dump(sql, *multiparams, **params):
+            f = sql.compile(dialect=engine.dialect)
+            buf.write(str(f).encode("utf-8"))
+            buf.write(b";\n")
+
+        new_engine = create_engine(db_url, strategy="mock", executor=dump)
+        metadata.create_all(new_engine, checkfirst=True)
+
+        return buf.getvalue().decode("utf-8")
+
     def get_current_schema(self) -> str | None:
+        return self.dump_schema()
+
+    def get_current_schema_as_json(self) -> str | None:
         """
         Returns the current schema of the connected database.
         By default, PostgreSQL uses 'public' as the default schema.
