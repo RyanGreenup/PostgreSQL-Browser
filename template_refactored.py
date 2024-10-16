@@ -31,6 +31,8 @@ class MainWindow(QMainWindow):
         self._create_menu()
         self._create_status_bar()
         self._create_toolbar()
+        self.toggle_sidebar_action = self._create_toggle_sidebar_action()
+        self.addAction(self.toggle_sidebar_action)
 
     def _setup_widgets(self):
         # Initialize widgets
@@ -150,18 +152,22 @@ class MainWindow(QMainWindow):
         ui_menu.addAction("Toggle DB Sidebar")
         ui_menu.addAction("Toggle Fields Sidebar")
 
-        # Create a toggle sidebar action
-        toggle_sidebar_action = QAction("Toggle Sidebar", self)
-        toggle_sidebar_action.setShortcut("Ctrl+T")  # Assign a keyboard shortcut
-        toggle_sidebar_action.setCheckable(True)
-        toggle_sidebar_action.triggered.connect(self._toggle_sidebar)
+        ui_menu.addAction(self.toggle_sidebar_action)
 
         help_menu = menu_bar.addMenu("Help")
         help_menu.addAction("About")
 
     def _toggle_sidebar(self, checked):
-        # Show or hide the sidebar based on the checked state
         self.tree1.setVisible(checked)
+        self.tree2.setVisible(checked)
+
+    def _create_toggle_sidebar_action(self):
+        toggle_sidebar_action = QAction("Toggle Sidebar", self)
+        toggle_sidebar_action.setShortcut("Ctrl+T")
+        toggle_sidebar_action.setCheckable(True)
+        toggle_sidebar_action.setChecked(True)  # Start with sidebar visible
+        toggle_sidebar_action.triggered.connect(self._toggle_sidebar)
+        return toggle_sidebar_action
 
     @staticmethod
     def _add_menu_actions(menu, actions):
