@@ -20,7 +20,9 @@ from PySide6.QtWidgets import (
     QTreeView,
     QVBoxLayout,
     QWidget,
+    QStyle,
 )
+from enum import Enum
 
 
 @dataclass
@@ -188,6 +190,15 @@ class CustomCentralWidget(QWidget):
         return widget
 
 
+class StandardIcon(Enum):
+    FILE: QIcon = QStyle.StandardPixmap.SP_FileIcon
+    OPEN: QIcon = QStyle.StandardPixmap.SP_DialogOpenButton
+    SAVE: QIcon = QStyle.StandardPixmap.SP_DriveFDIcon
+    CUT: QIcon = QStyle.StandardPixmap.SP_FileLinkIcon
+    COPY: QIcon = QStyle.StandardPixmap.SP_DriveNetIcon
+    PASTE: QIcon = QStyle.StandardPixmap.SP_DriveHDIcon
+
+
 class MenuManager:
     def __init__(self, main_window: MainWindow, panes: dict[str, Pane]):
         self.main_window = main_window
@@ -207,20 +218,56 @@ class MenuManager:
         self.setup_menus()
         self._create_toolbar()
 
+    def _add_menus_recursive(self, menu, menu_desc):
+        for key, value in menu_desc.items():
+            if isinstance(value, dict):
+                # Create a submenu
+                submenu = menu.addMenu(key)
+                self._add_menus_recursive(submenu, value)  # Recurse into the dict
+            elif isinstance(value, QAction):
+                # Add action
+                menu.addAction(value)
+
+
     def setup_menus(self) -> None:
         menu_bar = self.main_window.menuBar()
 
-        file_menu = menu_bar.addMenu("File")
-        self._add_menu_actions(file_menu, ["New", "Open", "Save", "Save As", "Exit"])
+        menu_desc = {
+            "File": {
+                "New": self._action_builder("New", "Ctrl+N", icon=StandardIcon.FILE.value),
+                "Open": self._action_builder("Open", "Ctrl+O", icon=StandardIcon.OPEN.value),
+                "Save": self._action_builder("Save", "Ctrl+S", icon=StandardIcon.SAVE.value),
+                "Save As": self._action_builder("Save As", "Ctrl+Shift+S"),
+                "Exit": self._action_builder("Exit", "Ctrl+Q")
+            },
+            "Edit": {
+                "Undo": self._action_builder("Undo", "Ctrl+Z.value"),
+                "Redo": self._action_builder("Redo", "Ctrl+Y.value"),
+                "Cut": self._action_builder("Cut", "Ctrl+X", icon=StandardIcon.CUT.value),
+                "Copy": self._action_builder("Copy", "Ctrl+C", icon=StandardIcon.COPY.value),
+                "Paste": self._action_builder("Paste", "Ctrl+V", icon=StandardIcon.PASTE.value),
+            },
+            "View": {
+                "Zoom In": self._action_builder("Zoom In", "Ctrl++"),
+            },
+            "Help": {
+                "About": self._action_builder("About")
+            },
+        }
 
-        edit_menu = menu_bar.addMenu("Edit")
-        self._add_menu_actions(edit_menu, ["Undo", "Redo", "Cut", "Copy"])
+        self._add_toolbar_actions(menu_desc)
 
-        view_menu = menu_bar.addMenu("View")
-        view_menu.addAction("Zoom In")
-
-        help_menu = menu_bar.addMenu("Help")
-        help_menu.addAction("About")
+        # file_menu = menu_bar.addMenu("File")
+        # self._add_menu_actions(file_menu, ["New", "Open", "Save", "Save As", "Exit"])
+        #
+        # edit_menu = menu_bar.addMenu("Edit")
+        # self._add_menu_actions(edit_menu, ["Undo", "Redo", "Cut", "Copy"])
+        #
+        # view_menu = menu_bar.addMenu("View")
+        # view_menu.addAction("Zoom In")
+        #
+        # help_menu = menu_bar.addMenu("Help")
+        # help_menu.addAction("About")
 
         # Deal with Toggling Panes
         ui_menu = view_menu.addMenu("UI")
@@ -247,7 +294,7 @@ class MenuManager:
         self,
         label: str,
         key: str,
-        callback: Callable[[], None],
+        callback: Optional[Callable[[], None]] = None,
         icon: Optional[QIcon] = None,
         checked: Optional[bool] = False,
     ) -> QAction:
