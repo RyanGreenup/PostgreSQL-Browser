@@ -1,4 +1,8 @@
+from collections.abc import Callable
+import json
 import sys
+from dataclasses import dataclass
+from typing import Any
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
@@ -31,8 +35,6 @@ class MainWindow(QMainWindow):
         self._create_menu()
         self._create_status_bar()
         self._create_toolbar()
-        self.toggle_sidebar_action = self._create_toggle_sidebar_action()
-        self.addAction(self.toggle_sidebar_action)
 
     def _setup_widgets(self):
         # Initialize widgets
@@ -84,15 +86,15 @@ class MainWindow(QMainWindow):
         table_widget = self._create_table_widget(search_bar_widget)
         ai_search_widget = self._create_ai_search_widget()
 
-        right_sidebar = QSplitter(Qt.Orientation.Vertical)
-        right_sidebar.addWidget(ai_search_widget)
-        right_sidebar.addWidget(self.query_box)
+        self.right_sidebar = QSplitter(Qt.Orientation.Vertical)
+        self.right_sidebar.addWidget(ai_search_widget)
+        self.right_sidebar.addWidget(self.query_box)
 
         hl = QSplitter(Qt.Orientation.Horizontal)
         hl.addWidget(self.tree1)
         hl.addWidget(self.tree2)
         hl.addWidget(table_widget)
-        hl.addWidget(right_sidebar)
+        hl.addWidget(self.right_sidebar)
         hl.setSizes([100, 100, 400, 100])
         hl.setHandleWidth(handle_size)
 
@@ -149,25 +151,82 @@ class MainWindow(QMainWindow):
         view_menu.addAction("Zoom In")
 
         ui_menu = view_menu.addMenu("UI")
-        ui_menu.addAction("Toggle DB Sidebar")
-        ui_menu.addAction("Toggle Fields Sidebar")
 
-        ui_menu.addAction(self.toggle_sidebar_action)
+        panes = {
+            "Ctrl+1": {
+                "label": "Toggle DB Tree",
+                "widget": self.tree1,
+                "last_state": self.tree1.isVisible(),
+            },
+            "Ctrl+2": {
+                "label": "Toggle Field Tree",
+                "widget": self.tree2,
+                "last_state": self.tree2.isVisible(),
+            },
+            "Ctrl+3": {
+                "label": "Toggle Right Sidebar",
+                "widget": self.right_sidebar,
+                "last_state": self.right_sidebar.isVisible(),
+            },
+            "Ctrl+4": {
+                "label": "Toggle Output",
+                "widget": self.output_text_edit,
+                "last_state": self.output_text_edit.isVisible(),
+            },
+        }
+
+        for key, d in panes.items():
+            d["action"] = self._create_toggle_action(d["label"], key, d["widget"])
+
+        [ui_menu.addAction(pane["action"]) for pane in panes.values()]
+
+        # [ui_menu.addAction(action) for action in toggle_actions]
+        self.maximized_table = False
+        hide_all_action = QAction("Hide All Sidebars", self)
+        hide_all_action.setShortcut("Ctrl+0")
+        hide_all_action.triggered.connect(lambda: self._maximize_table(panes))
+        ui_menu.addAction(hide_all_action)
 
         help_menu = menu_bar.addMenu("Help")
         help_menu.addAction("About")
 
-    def _toggle_sidebar(self, checked):
-        self.tree1.setVisible(checked)
-        self.tree2.setVisible(checked)
+    def _hide_all_panes(self, panes: dict[str, dict[str, Any]]):
+        print("hiding")
+        for d in panes.values():
+            d["last_state"] = d["widget"].isVisible()
+            d["widget"].setVisible(False)
 
-    def _create_toggle_sidebar_action(self):
-        toggle_sidebar_action = QAction("Toggle Sidebar", self)
-        toggle_sidebar_action.setShortcut("Ctrl+T")
+    def _restore_all_panes(self, panes: dict[str, dict[str, Any]]):
+        print("restoring")
+        for d in panes.values():
+            d["widget"].setVisible(d.get("last_state"))
+
+    def _maximize_table(self, panes):
+        print("maximizing")
+        print(self.maximized_table)
+        if self.maximized_table:
+            self._restore_all_panes(panes)
+        else:
+            self._hide_all_panes(panes)
+
+        self.maximized_table = not self.maximized_table
+
+    def toggle_widget(self, widget):
+        widget.setVisible(not widget.isVisible())
+
+    def _create_toggle_action(self, label: str, key: str, widget: QWidget) -> QAction:
+        toggle_sidebar_action = QAction(label, self)
+        toggle_sidebar_action.setShortcut(key)
         toggle_sidebar_action.setCheckable(True)
         toggle_sidebar_action.setChecked(True)  # Start with sidebar visible
-        toggle_sidebar_action.triggered.connect(self._toggle_sidebar)
+        toggle_sidebar_action.triggered.connect(lambda: self.toggle_widget(widget))
         return toggle_sidebar_action
+
+    def _create_toggle_callback(self, action: QAction, widget: QWidget) -> Callable:
+        def toggle_sidebar():
+            widget.setVisible(action.isChecked())
+
+        return toggle_sidebar
 
     @staticmethod
     def _add_menu_actions(menu, actions):
