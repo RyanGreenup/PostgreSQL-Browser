@@ -1,7 +1,7 @@
 from collections.abc import Callable
 import sys
 from dataclasses import dataclass
-from typing import Dict
+from typing import Dict, Optional, List
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction, QIcon
 from PySide6.QtWidgets import (
@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLineEdit,
     QMainWindow,
+    QMenu,
     QPushButton,
     QSplitter,
     QStatusBar,
@@ -30,16 +31,16 @@ class Pane:
     action: QAction | None = None
 
 
-class MainWindow(QMainWindow):
-    def __init__(self):
+class CustomCentralWidget(QWidget):
+    def __init__(self, main_window: QMainWindow):
         super().__init__()
+        self.main_window = main_window
         self.setWindowTitle("PySide6 Minimal Example")
         self._initialize_ui()
 
     def _initialize_ui(self):
         self._setup_widgets()
         self._create_menu()
-        self._create_status_bar()
         self._create_toolbar()
 
     def _setup_widgets(self):
@@ -56,7 +57,9 @@ class MainWindow(QMainWindow):
 
         # Layout setup
         main_layout = self._create_main_layout(handle_size=20)
-        self.setCentralWidget(main_layout)
+        layout = QVBoxLayout()
+        layout.addWidget(main_layout)
+        self.setLayout(layout)
 
     def _create_tree_view(self):
         tree_view = QTreeView()
@@ -174,7 +177,7 @@ class MainWindow(QMainWindow):
         return widget
 
     def _create_menu(self) -> None:
-        menu_bar = self.menuBar()
+        menu_bar = self.main_window.menuBar()
 
         file_menu = menu_bar.addMenu("File")
         self._add_menu_actions(file_menu, ["New", "Open", "Save", "Save As", "Exit"])
@@ -223,18 +226,15 @@ class MainWindow(QMainWindow):
         return action
 
     def _hide_all_panes(self, panes: Dict[str, Pane]) -> None:
-        print("hiding")
         for pane in panes.values():
             pane.last_state = pane.widget.isVisible()
             pane.widget.setVisible(False)
 
     def _restore_all_panes(self, panes: Dict[str, Pane]) -> None:
-        print("restoring")
         for pane in panes.values():
             pane.widget.setVisible(pane.last_state)
 
     def _maximize_table(self, panes: Dict[str, Pane]) -> None:
-        print("maximizing")
         print(self.maximized_table)
         if self.maximized_table:
             self._restore_all_panes(panes)
@@ -256,20 +256,36 @@ class MainWindow(QMainWindow):
         for action_text in actions:
             menu.addAction(action_text)
 
-    def _create_status_bar(self) -> None:
-        status = QStatusBar(self)
-        status.showMessage("Status Bar")
-        self.setStatusBar(status)
-
     def _create_toolbar(self) -> None:
         toolbar = QToolBar("Toolbar")
-        self.addToolBar(toolbar)
+        self.main_window.addToolBar(toolbar)
         self._add_toolbar_actions(toolbar, ["New", "Open", "Save", "Save As"])
 
     @staticmethod
     def _add_toolbar_actions(toolbar: QToolBar, actions: List[str]) -> None:
         for action_text in actions:
             toolbar.addAction(action_text)
+
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+
+        # Status Bar
+        status = QStatusBar(self)
+        status.showMessage("Status Bar")
+        self.setStatusBar(status)
+
+        # Add Central Widget
+        self.central_widget = CustomCentralWidget(self)
+        self.setCentralWidget(self.central_widget)
+
+        # TODO separate out the Menu
+        # Initialize managers
+        # self.menu_manager = MenuManager(self)
+        # self.toolbar_manager = ToolbarManager(self)
+
+
 
 
 def main() -> None:
