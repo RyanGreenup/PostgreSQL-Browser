@@ -31,6 +31,23 @@ class Pane:
     action: QAction | None = None
 
 
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+
+        # Status Bar
+        status = QStatusBar(self)
+        status.showMessage("Status Bar")
+        self.setStatusBar(status)
+
+        # Add Central Widget
+        self.central_widget = CustomCentralWidget(self)
+        self.setCentralWidget(self.central_widget)
+
+        self.menu_manager = MenuManager(self, self.central_widget.panes)
+        self.menu_manager.build()
+
+
 class CustomCentralWidget(QWidget):
     def __init__(self, main_window: QMainWindow):
         super().__init__()
@@ -40,8 +57,6 @@ class CustomCentralWidget(QWidget):
 
     def _initialize_ui(self):
         self._setup_widgets()
-        self._create_menu()
-        self._create_toolbar()
 
     def _setup_widgets(self):
         # Initialize widgets
@@ -113,7 +128,8 @@ class CustomCentralWidget(QWidget):
         lower_pane.setHandleWidth(handle_size)
         lower_pane.setSizes([400, 100])
 
-        # Panes
+        # Store the panes as an attribute so they can be
+        # manipulated by menu items
         self.panes = {
             "Ctrl+1": Pane(
                 label="Toggle DB Tree",
@@ -136,11 +152,6 @@ class CustomCentralWidget(QWidget):
                 last_state=self.output_text_edit.isVisible(),
             ),
         }
-
-        # Associate QActions with Panes for toggling them
-        for key, pane in self.panes.items():
-            pane.action = self._create_toggle_action(pane.label, key, pane.widget)
-            assert pane.action is not None
 
         return lower_pane
 
@@ -176,7 +187,27 @@ class CustomCentralWidget(QWidget):
         widget.setLayout(layout)
         return widget
 
-    def _create_menu(self) -> None:
+
+class MenuManager:
+    def __init__(self, main_window: MainWindow, panes: dict[str, Pane]):
+        self.main_window = main_window
+        self.panes = panes
+
+    def _create_toolbar(self) -> None:
+        toolbar = QToolBar("Toolbar")
+        self.main_window.addToolBar(toolbar)
+        self._add_toolbar_actions(toolbar, ["New", "Open", "Save", "Save As"])
+
+    @staticmethod
+    def _add_toolbar_actions(toolbar: QToolBar, actions: List[str]) -> None:
+        for action_text in actions:
+            toolbar.addAction(action_text)
+
+    def build(self):
+        self.setup_menus()
+        self._create_toolbar()
+
+    def setup_menus(self) -> None:
         menu_bar = self.main_window.menuBar()
 
         file_menu = menu_bar.addMenu("File")
@@ -194,6 +225,10 @@ class CustomCentralWidget(QWidget):
         # Deal with Toggling Panes
         ui_menu = view_menu.addMenu("UI")
 
+        # Associate QActions with Panes for toggling them
+        for key, pane in self.panes.items():
+            pane.action = self._create_toggle_action(pane.label, key, pane.widget)
+            assert pane.action is not None
         [
             ui_menu.addAction(pane.action)
             for pane in self.panes.values()
@@ -206,6 +241,8 @@ class CustomCentralWidget(QWidget):
         )
         ui_menu.addAction(hide_all_action)
 
+    # Action Factory
+
     def _action_builder(
         self,
         label: str,
@@ -215,15 +252,34 @@ class CustomCentralWidget(QWidget):
         checked: Optional[bool] = False,
     ) -> QAction:
         if icon:
-            action = QAction(icon, label, self)
+            action = QAction(icon, label, self.main_window)
         else:
-            action = QAction(label, self)
+            action = QAction(label, self.main_window)
         action.setShortcut(key)
         action.triggered.connect(callback)
         if checked is not None:
             action.setCheckable(True)
             action.setChecked(checked)
         return action
+
+    @staticmethod
+    def _add_menu_actions(menu: QMenu, actions: List[str]) -> None:
+        for action_text in actions:
+            menu.addAction(action_text)
+
+    # Toggling Panes
+
+    # Actions for Toggling
+
+    def toggle_widget(self, widget: QWidget) -> None:
+        widget.setVisible(not widget.isVisible())
+
+    def _create_toggle_action(self, label: str, key: str, widget: QWidget) -> QAction:
+        return self._action_builder(
+            label, key, lambda: self.toggle_widget(widget), checked=True
+        )
+
+    # Pane Toggle Logic
 
     def _hide_all_panes(self, panes: Dict[str, Pane]) -> None:
         for pane in panes.values():
@@ -235,57 +291,12 @@ class CustomCentralWidget(QWidget):
             pane.widget.setVisible(pane.last_state)
 
     def _maximize_table(self, panes: Dict[str, Pane]) -> None:
-        print(self.maximized_table)
         if self.maximized_table:
             self._restore_all_panes(panes)
         else:
             self._hide_all_panes(panes)
 
         self.maximized_table = not self.maximized_table
-
-    def toggle_widget(self, widget: QWidget) -> None:
-        widget.setVisible(not widget.isVisible())
-
-    def _create_toggle_action(self, label: str, key: str, widget: QWidget) -> QAction:
-        return self._action_builder(
-            label, key, lambda: self.toggle_widget(widget), checked=True
-        )
-
-    @staticmethod
-    def _add_menu_actions(menu: QMenu, actions: List[str]) -> None:
-        for action_text in actions:
-            menu.addAction(action_text)
-
-    def _create_toolbar(self) -> None:
-        toolbar = QToolBar("Toolbar")
-        self.main_window.addToolBar(toolbar)
-        self._add_toolbar_actions(toolbar, ["New", "Open", "Save", "Save As"])
-
-    @staticmethod
-    def _add_toolbar_actions(toolbar: QToolBar, actions: List[str]) -> None:
-        for action_text in actions:
-            toolbar.addAction(action_text)
-
-
-class MainWindow(QMainWindow):
-    def __init__(self):
-        super().__init__()
-
-        # Status Bar
-        status = QStatusBar(self)
-        status.showMessage("Status Bar")
-        self.setStatusBar(status)
-
-        # Add Central Widget
-        self.central_widget = CustomCentralWidget(self)
-        self.setCentralWidget(self.central_widget)
-
-        # TODO separate out the Menu
-        # Initialize managers
-        # self.menu_manager = MenuManager(self)
-        # self.toolbar_manager = ToolbarManager(self)
-
-
 
 
 def main() -> None:
