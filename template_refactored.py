@@ -173,7 +173,7 @@ class MainWindow(QMainWindow):
         widget.setLayout(layout)
         return widget
 
-    def _create_menu(self):
+    def _create_menu(self) -> None:
         menu_bar = self.menuBar()
 
         file_menu = menu_bar.addMenu("File")
@@ -207,9 +207,9 @@ class MainWindow(QMainWindow):
         self,
         label: str,
         key: str,
-        callback: Callable,
-        icon: QIcon | None = None,
-        checked: bool | None = False,
+        callback: Callable[[], None],
+        icon: Optional[QIcon] = None,
+        checked: Optional[bool] = False,
     ) -> QAction:
         if icon:
             action = QAction(icon, label, self)
@@ -222,18 +222,18 @@ class MainWindow(QMainWindow):
             action.setChecked(checked)
         return action
 
-    def _hide_all_panes(self, panes: Dict[str, Pane]):
+    def _hide_all_panes(self, panes: Dict[str, Pane]) -> None:
         print("hiding")
         for pane in panes.values():
             pane.last_state = pane.widget.isVisible()
             pane.widget.setVisible(False)
 
-    def _restore_all_panes(self, panes: Dict[str, Pane]):
+    def _restore_all_panes(self, panes: Dict[str, Pane]) -> None:
         print("restoring")
         for pane in panes.values():
             pane.widget.setVisible(pane.last_state)
 
-    def _maximize_table(self, panes: Dict[str, Pane]):
+    def _maximize_table(self, panes: Dict[str, Pane]) -> None:
         print("maximizing")
         print(self.maximized_table)
         if self.maximized_table:
@@ -243,7 +243,7 @@ class MainWindow(QMainWindow):
 
         self.maximized_table = not self.maximized_table
 
-    def toggle_widget(self, widget):
+    def toggle_widget(self, widget: QWidget) -> None:
         widget.setVisible(not widget.isVisible())
 
     def _create_toggle_action(self, label: str, key: str, widget: QWidget) -> QAction:
@@ -252,27 +252,27 @@ class MainWindow(QMainWindow):
         )
 
     @staticmethod
-    def _add_menu_actions(menu, actions):
+    def _add_menu_actions(menu: QMenu, actions: List[str]) -> None:
         for action_text in actions:
             menu.addAction(action_text)
 
-    def _create_status_bar(self):
+    def _create_status_bar(self) -> None:
         status = QStatusBar(self)
         status.showMessage("Status Bar")
         self.setStatusBar(status)
 
-    def _create_toolbar(self):
+    def _create_toolbar(self) -> None:
         toolbar = QToolBar("Toolbar")
         self.addToolBar(toolbar)
         self._add_toolbar_actions(toolbar, ["New", "Open", "Save", "Save As"])
 
     @staticmethod
-    def _add_toolbar_actions(toolbar, actions):
+    def _add_toolbar_actions(toolbar: QToolBar, actions: List[str]) -> None:
         for action_text in actions:
             toolbar.addAction(action_text)
 
 
-def main():
+def main() -> None:
     app = QApplication(sys.argv)
     main_window = MainWindow()
     main_window.show()
