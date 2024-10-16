@@ -1,4 +1,6 @@
+import sys
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
@@ -16,23 +18,24 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-import sys
 
-QToolBar
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("PySide6 Minimal Example")
-        self._setup_ui()
+        self._initialize_ui()
+
+    def _initialize_ui(self):
+        self._setup_widgets()
         self._create_menu()
         self._create_status_bar()
         self._create_toolbar()
 
-    def _setup_ui(self):
+    def _setup_widgets(self):
         # Initialize widgets
-        self.tree1 = QTreeView()
-        self.tree2 = QTreeView()
+        self.tree1 = self._create_tree_view()
+        self.tree2 = self._create_tree_view()
         self.output_text_edit = self._create_output_text_edit()
         self.table1 = QTableView()
         self.query_box = self._create_query_box()
@@ -42,8 +45,12 @@ class MainWindow(QMainWindow):
         self.choose_model = self._create_model_selector()
 
         # Layout setup
-        layout = self._create_main_layout(handle_size=20)
-        self.setCentralWidget(layout)
+        main_layout = self._create_main_layout(handle_size=20)
+        self.setCentralWidget(main_layout)
+
+    def _create_tree_view(self):
+        tree_view = QTreeView()
+        return tree_view
 
     def _create_output_text_edit(self):
         text_edit = QTextEdit()
@@ -128,40 +135,60 @@ class MainWindow(QMainWindow):
         return widget
 
     def _create_menu(self):
-        menu = QMenuBar(self)
-        self.setMenuBar(menu)
+        menu_bar = self.menuBar()
 
-        file_menu = menu.addMenu("File")
-        for action_text in ["New", "Open", "Save", "Save As", "Exit"]:
-            file_menu.addAction(action_text)
+        file_menu = menu_bar.addMenu("File")
+        self._add_menu_actions(file_menu, ["New", "Open", "Save", "Save As", "Exit"])
 
-        edit_menu = menu.addMenu("Edit")
-        for action_text in ["Undo", "Redo", "Cut", "Copy"]:
-            edit_menu.addAction(action_text)
+        edit_menu = menu_bar.addMenu("Edit")
+        self._add_menu_actions(edit_menu, ["Undo", "Redo", "Cut", "Copy"])
 
-        view_menu = menu.addMenu("View")
+        view_menu = menu_bar.addMenu("View")
         view_menu.addAction("Zoom In")
 
-        help_menu = menu.addMenu("Help")
+        ui_menu = view_menu.addMenu("UI")
+        ui_menu.addAction("Toggle DB Sidebar")
+        ui_menu.addAction("Toggle Fields Sidebar")
+
+        # Create a toggle sidebar action
+        toggle_sidebar_action = QAction("Toggle Sidebar", self)
+        toggle_sidebar_action.setShortcut("Ctrl+T")  # Assign a keyboard shortcut
+        toggle_sidebar_action.setCheckable(True)
+        toggle_sidebar_action.triggered.connect(self._toggle_sidebar)
+
+        help_menu = menu_bar.addMenu("Help")
         help_menu.addAction("About")
+
+    def _toggle_sidebar(self, checked):
+        # Show or hide the sidebar based on the checked state
+        self.tree1.setVisible(checked)
+
+    @staticmethod
+    def _add_menu_actions(menu, actions):
+        for action_text in actions:
+            menu.addAction(action_text)
 
     def _create_status_bar(self):
         status = QStatusBar(self)
-        self.setStatusBar(status)
         status.showMessage("Status Bar")
+        self.setStatusBar(status)
 
     def _create_toolbar(self):
         toolbar = QToolBar("Toolbar")
         self.addToolBar(toolbar)
-        for action_text in ["New", "Open", "Save", "Save As"]:
+        self._add_toolbar_actions(toolbar, ["New", "Open", "Save", "Save As"])
+
+    @staticmethod
+    def _add_toolbar_actions(toolbar, actions):
+        for action_text in actions:
             toolbar.addAction(action_text)
 
 
 def main():
-    app = QApplication(sys.argv)  # Create an instance of the application
-    main_window = MainWindow()  # Create an instance of the main window
-    main_window.show()  # Show the main window
-    sys.exit(app.exec())  # Start the main event loop
+    app = QApplication(sys.argv)
+    main_window = MainWindow()
+    main_window.show()
+    sys.exit(app.exec())
 
 
 if __name__ == "__main__":
