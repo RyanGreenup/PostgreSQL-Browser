@@ -191,12 +191,12 @@ class CustomCentralWidget(QWidget):
 
 
 class StandardIcon(Enum):
-    FILE: QIcon = QStyle.StandardPixmap.SP_FileIcon
-    OPEN: QIcon = QStyle.StandardPixmap.SP_DialogOpenButton
-    SAVE: QIcon = QStyle.StandardPixmap.SP_DriveFDIcon
-    CUT: QIcon = QStyle.StandardPixmap.SP_FileLinkIcon
-    COPY: QIcon = QStyle.StandardPixmap.SP_DriveNetIcon
-    PASTE: QIcon = QStyle.StandardPixmap.SP_DriveHDIcon
+    FILE = QStyle.StandardPixmap.SP_FileIcon
+    OPEN = QStyle.StandardPixmap.SP_DialogOpenButton
+    SAVE = QStyle.StandardPixmap.SP_DriveFDIcon
+    CUT = QStyle.StandardPixmap.SP_FileLinkIcon
+    COPY = QStyle.StandardPixmap.SP_DriveNetIcon
+    PASTE = QStyle.StandardPixmap.SP_DriveHDIcon
 
 
 class MenuManager:
@@ -234,18 +234,18 @@ class MenuManager:
 
         menu_desc = {
             "File": {
-                "New": self._action_builder("New", "Ctrl+N", icon=StandardIcon.FILE.value),
-                "Open": self._action_builder("Open", "Ctrl+O", icon=StandardIcon.OPEN.value),
-                "Save": self._action_builder("Save", "Ctrl+S", icon=StandardIcon.SAVE.value),
+                "New": self._action_builder("New", "Ctrl+N", icon=StandardIcon.FILE),
+                "Open": self._action_builder("Open", "Ctrl+O", icon=StandardIcon.OPEN),
+                "Save": self._action_builder("Save", "Ctrl+S", icon=StandardIcon.SAVE),
                 "Save As": self._action_builder("Save As", "Ctrl+Shift+S"),
                 "Exit": self._action_builder("Exit", "Ctrl+Q")
             },
             "Edit": {
-                "Undo": self._action_builder("Undo", "Ctrl+Z.value"),
-                "Redo": self._action_builder("Redo", "Ctrl+Y.value"),
-                "Cut": self._action_builder("Cut", "Ctrl+X", icon=StandardIcon.CUT.value),
-                "Copy": self._action_builder("Copy", "Ctrl+C", icon=StandardIcon.COPY.value),
-                "Paste": self._action_builder("Paste", "Ctrl+V", icon=StandardIcon.PASTE.value),
+                "Undo": self._action_builder("Undo", "Ctrl+Z"),
+                "Redo": self._action_builder("Redo", "Ctrl+Y"),
+                "Cut": self._action_builder("Cut", "Ctrl+X", icon=StandardIcon.CUT),
+                "Copy": self._action_builder("Copy", "Ctrl+C", icon=StandardIcon.COPY),
+                "Paste": self._action_builder("Paste", "Ctrl+V", icon=StandardIcon.PASTE),
             },
             "View": {
                 "Zoom In": self._action_builder("Zoom In", "Ctrl++"),
@@ -295,15 +295,17 @@ class MenuManager:
         label: str,
         key: str,
         callback: Optional[Callable[[], None]] = None,
-        icon: Optional[QIcon] = None,
+        icon: Optional[StandardIcon] = None,
         checked: Optional[bool] = False,
     ) -> QAction:
         if icon:
-            action = QAction(icon, label, self.main_window)
+            qicon = self.main_window.style().standardIcon(icon.value)
+            action = QAction(qicon, label, self.main_window)
         else:
             action = QAction(label, self.main_window)
         action.setShortcut(key)
-        action.triggered.connect(callback)
+        if callback:
+            action.triggered.connect(callback)
         if checked is not None:
             action.setCheckable(True)
             action.setChecked(checked)
