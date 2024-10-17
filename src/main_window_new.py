@@ -37,7 +37,7 @@ from gui_components import DBTablesTree, TableView
 
 def main() -> None:
     app = QApplication(sys.argv)
-    main_window = MainWindow()
+    main_window = MainWindow("localhost", 5432, "postgres", None)
     main_window.show()
     sys.exit(app.exec())
 
@@ -88,7 +88,14 @@ class Pane:
 
 
 class MainWindow(QMainWindow):
-    def __init__(self):
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        username: str,
+        password: str | None,
+        openai_url: str = "http://localhost:11434",
+    ):
         super().__init__()
 
         # Status Bar
