@@ -221,14 +221,8 @@ class MenuManager:
         self.panes = panes
 
     def _create_toolbar(self) -> None:
-        toolbar = QToolBar("Toolbar")
-        self.main_window.addToolBar(toolbar)
-        self._add_toolbar_actions(toolbar, ["New", "Open", "Save", "Save As"])
-
-    @staticmethod
-    def _add_toolbar_actions(toolbar: QToolBar, actions: List[str]) -> None:
-        for action_text in actions:
-            toolbar.addAction(action_text)
+        toolbar_manager = ToolbarManager(self.main_window, self.menu_desc)
+        toolbar_manager.build()
 
     def build(self):
         self.setup_menus()
@@ -281,6 +275,19 @@ class MenuManager:
             },
             "&Help": {"&About": self._action_builder("Ctrl+,")},
         }
+
+        # Add Pane Togge Logic
+        menu_desc_view = self.menu_desc["&View"]
+        menu_desc_view["&UI"] = {  # pyright: ignore
+            f"Toggle &{p.label}": self._build_pane_toggle_action(p)
+            for p in self.panes.values()
+        }
+
+        menu_desc_view["&UI"]["&Maximize Table"] = self._action_builder(
+            "Ctrl+M",
+            callback=self._maximize_table,
+            icon=StandardIcon.COPY,
+        )
 
         # Add Pane Togge Logic
         menu_desc_view = self.menu_desc["&View"]
@@ -359,6 +366,23 @@ def main() -> None:
     main_window = MainWindow()
     main_window.show()
     sys.exit(app.exec())
+
+
+class ToolbarManager:
+    def __init__(self, main_window: QMainWindow, menu_desc: dict):
+        self.main_window = main_window
+        self.menu_desc = menu_desc
+        self.toolbar = QToolBar("Toolbar")
+        self.main_window.addToolBar(self.toolbar)
+
+    def build(self):
+        self._add_toolbar_actions(self.menu_desc["&File"])
+        self._add_toolbar_actions(self.menu_desc["&Edit"])
+
+    def _add_toolbar_actions(self, menu_items: dict):
+        for action_text, action in menu_items.items():
+            if isinstance(action, QAction) and action.icon():
+                self.toolbar.addAction(action)
 
 
 if __name__ == "__main__":
