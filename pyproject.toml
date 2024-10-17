@@ -8,11 +8,11 @@ readme = "README.md"
 packages = [{include = "*", from="src"}]
 
 [tool.poetry.dependencies]
-python = "^3.11"
-PyQt6 = "^6.7.1"
+python = ">=3.11,<3.13"
 psycopg2-binary = "^2.9.9"
 typer = "^0.12.5"
 pyperclip = "^1.9.0"
+pyside6 = "^6.8.0.1"
 
 [tool.poetry.group.dev.dependencies]
 pyright = "^1.1.384"
