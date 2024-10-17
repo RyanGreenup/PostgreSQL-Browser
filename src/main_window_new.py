@@ -32,12 +32,14 @@ from gui_components import DBTablesTree, TableView
 from data_types import ConnectionConfig
 from connection_widget import ConnectionWidget
 from database_manager import DatabaseManager
-from warning_types import TreeWarning, issue_warning
+from warning_types import TreeWarning, issue_warning, OpenAIWarning
 from sql_query import DBTreeDisplay
 from data_types import Database, Table
 from search_bar import SearchWidget
 from sql_query import SQLQueryEditor
 from data_types import DBItemType
+from ai_search_bar import AiSearchBar
+from openai_query import OpenAIQueryManager
 
 # ** Main Function
 
@@ -154,6 +156,7 @@ class CustomCentralWidget(QWidget):
         self.db_manager = DatabaseManager(
             conf.host, conf.port, conf.username, conf.password
         )
+        self.open_ai_query_manager = OpenAIQueryManager(url=conf.openai_url)
         self.main_window = main_window
         self.setWindowTitle("PySide6 Minimal Example")
         self._initialize_ui()
@@ -182,6 +185,7 @@ class CustomCentralWidget(QWidget):
         self.query_edit = self._create_query_box()
         self.search_bar = self._create_search_bar()
         self.ai_search = QTextEdit()
+        self.ai_search.setPlaceholderText("Enter AI Search Query")
         self.send_ai_search_button = QPushButton("Send AI Search")
         self.choose_model = self._create_model_selector()
 
@@ -192,6 +196,33 @@ class CustomCentralWidget(QWidget):
         self.setLayout(layout)
 
     # ***** Database
+    # ****** AI Search
+    def on_ai_search(self) -> None:
+        print("---")
+        print("Fired AI")
+        query = self.ai_search.toPlainText()
+        model = self.choose_model.currentText()
+        print(f"Query: {query}")
+        print(f"Model: {model}")
+        print("---")
+        out = self.get_result(query, model)
+        if self.ai_search:
+            if out:
+                self.ai_search.setPlainText(out)
+            else:
+                issue_warning("No result from AI", OpenAIWarning)
+        # TODO add agent like chat history
+        # TODO consider stripping non SELECT queries and running in loop
+        # self.set_chat_history(PromptResponse(query, out))
+        # self.search_requested.emit(query, model)
+
+    def get_result(self, query: str, model: str) -> str | None:
+        schema = self.db_manager.get_current_schema()
+        if schema:
+            return self.open_ai_query_manager.chat_completion_from_schema(
+                schema, model, query, max_tokens=300
+            )
+        return schema
     # ****** Query
     def get_current_database(self) -> str:
         return self.db_tree.get_current_database()
@@ -420,7 +451,10 @@ class CustomCentralWidget(QWidget):
         return search_bar
 
     def _create_model_selector(self):
-        choose_model = QComboBox()
+        # Create ComboBox for Model Selection
+        # TODO this should be able to refresh if new models are added to the server
+        choose_model = QComboBox(self)
+        choose_model.addItems(self.open_ai_query_manager.get_available_models())
         choose_model.addItem("Choose a Model")  # Note: placeholder item
         return choose_model
 
@@ -524,6 +558,11 @@ class MenuManager:
                     "Ctrl+E",
                     # TODO this should be a method of the central widget
                     callback=lambda: self.central_widget.execute_custom_query(),
+                ),
+                "&AI Search": self._action_builder(
+                    "Ctrl+R",
+                    # TODO this should be a method of the central widget
+                    callback=lambda: self.central_widget.on_ai_search(),
                 ),
             },
             "&Help": {"&About": self._action_builder("Ctrl+,")},

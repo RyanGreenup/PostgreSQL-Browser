@@ -138,6 +138,8 @@ class OpenAIQueryManager:
             models += self.get_ollama_models()
             return sorted(models)
         except Exception as e:
+            # TODO this is erroneous
+            # Consider an ollama flag to enable/disable
             issue_warning(
                 f"Failed to retrieve available models: {str(e)}", OpenAIWarning
             )

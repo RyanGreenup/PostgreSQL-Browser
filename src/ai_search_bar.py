@@ -1,19 +1,34 @@
-from PyQt6.QtWidgets import QWidget, QVBoxLayout
-from PyQt6.QtCore import QUrl, pyqtSignal, pyqtSlot
-from PyQt6.QtQuickWidgets import QQuickWidget
+from PyQt6.QtCore import pyqtSignal, pyqtSlot
+from PySide6.QtWidgets import QWidget, QLineEdit, QComboBox, QPushButton, QHBoxLayout, QVBoxLayout
 from database_manager import DatabaseManager
 from openai_query import OpenAIQueryManager
 from dataclasses import dataclass
-
 
 @dataclass
 class PromptResponse:
     user_input: str
     ai_response: str
 
+class LLMManager:
+    def __init__(
+        self,
+        db_manager: DatabaseManager,
+        text_edit,
+        openai_url: str = "http://localhost:11434",
+        parent=None,
+    ):
+        self.db_manager = db_manager
+        self.text_edit = text_edit
+        self.open_ai_query_manager = OpenAIQueryManager(url=openai_url)
+        self.chat_history = []
+        self.models = self.list_models()
 
+    def list_models(self) -> list[str]:
+        return self.open_ai_query_manager.get_available_models()
+
+# TODO to be LLMManager not search bar
 class AiSearchBar(QWidget):
-    search_requested = pyqtSignal(str)
+    search_requested = pyqtSignal(str, str)
 
     def __init__(
         self,
@@ -27,35 +42,50 @@ class AiSearchBar(QWidget):
         self.text_edit = text_edit
         self.open_ai_query_manager = OpenAIQueryManager(url=openai_url)
         self.chat_history = []
+        self.models = self.list_models()
         self.initUI()
 
     def initUI(self):
         layout = QVBoxLayout(self)
-        self.setLayout(layout)
 
-        # Create QQuickWidget
-        self.quick_widget = QQuickWidget()
-        self.quick_widget.setResizeMode(QQuickWidget.ResizeMode.SizeRootObjectToView)
+        # Create Search Bar Input
+        self.search_bar = QLineEdit(self)
+        self.search_bar.setPlaceholderText("Enter your AI search query...")
+        self.search_bar.returnPressed.connect(self.on_return_pressed)
 
-        # Load QML file
-        self.quick_widget.setSource(QUrl.fromLocalFile("src/AiSearchBar.qml"))
+        # Create ComboBox for Model Selection
+        self.model_combo = QComboBox(self)
+        self.model_combo.addItems(self.models)
 
-        # Get root object
-        self.root = self.quick_widget.rootObject()
+        # Create Search Button
+        self.search_button = QPushButton("AI Search", self)
+        self.search_button.clicked.connect(self.on_button_clicked)
 
-        # Connect signals
-        self.root.search.connect(self.on_search)
+        # Set layouts
+        row_layout = QHBoxLayout()
+        row_layout.addWidget(self.search_bar)
+        row_layout.addWidget(self.model_combo)
+        row_layout.addWidget(self.search_button)
 
-        # Add QQuickWidget to layout
-        layout.addWidget(self.quick_widget)
+        layout.addLayout(row_layout)
 
-        # Populate models
-        self.root.setProperty("models", self.list_models())
+    @pyqtSlot()
+    def on_return_pressed(self):
+        query = self.search_bar.text()
+        model = self.model_combo.currentText()
+        self.search_requested.emit(query, model)
+
+    @pyqtSlot()
+    def on_button_clicked(self):
+        query = self.search_bar.text()
+        model = self.model_combo.currentText()
+        self.search_requested.emit(query, model)
 
     @pyqtSlot(str, str)
-    def on_search(self, query: str, model: str):
+    def on_search_request(self, query: str, model: str):
         out = self.get_result(query, model)
-        self.text_edit.setPlainText(out)
+        if self.text_edit:
+            self.text_edit.setPlainText(out)
         self.set_chat_history(PromptResponse(query, out))
 
     def list_models(self) -> list[str]:
@@ -82,7 +112,9 @@ class AiSearchBar(QWidget):
         return schema
 
     def clear(self):
-        self.root.setProperty("searchText", "")
+        self.search_bar.clear()
 
     def set_focus(self):
-        self.root.forceActiveFocus()
+        self.search_bar.setFocus()
+
+
