@@ -3,3 +3,19 @@ Allow Editing the Database
 Allow running SQL queries
     - This should list all tables and fields as a tree_widget.
 
+Ai Agent, run stripped queries till it works, chat history
+Command Palette
+Selecting Field tree should change the search target field for search
+The search when nothing is selected should search all fields
+Clear Dead Code (comments and vulture and print statements)
+Test moving between multiple db
+Load and save DB
+
+Move config bar into popup dialog menu
+Docs
+Write a logging method to merge issue_warning and user output
+S
+
+
+Add SQLite Backend
+Add MS SQL Backend
