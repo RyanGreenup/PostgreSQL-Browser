@@ -1,3 +1,8 @@
+#!/usr/bin/env python3
+
+# * Database Manager ..........................................................
+# ** Imports
+
 from collections.abc import Callable
 import sys
 from dataclasses import dataclass
@@ -23,10 +28,37 @@ from PySide6.QtWidgets import (
 )
 from enum import Enum
 
+# ** Main Function
+
+
+def main() -> None:
+    app = QApplication(sys.argv)
+    main_window = MainWindow()
+    main_window.show()
+    sys.exit(app.exec())
+
+
+# ** Constants
+# *** Temp label for QAction's
 
 # A temporary Label to use for actions
 # These are replaced by the Dict Keys before Assignment
 TEMP_LABEL = "TEMP LABEL"
+
+
+# ** Classes
+# *** Types
+# **** Icons
+class StandardIcon(Enum):
+    FILE = QStyle.StandardPixmap.SP_FileIcon
+    OPEN = QStyle.StandardPixmap.SP_DialogOpenButton
+    SAVE = QStyle.StandardPixmap.SP_DriveFDIcon
+    CUT = QStyle.StandardPixmap.SP_FileLinkIcon
+    COPY = QStyle.StandardPixmap.SP_DriveNetIcon
+    PASTE = QStyle.StandardPixmap.SP_DriveHDIcon
+
+
+# **** Pane
 
 
 @dataclass
@@ -48,6 +80,9 @@ class Pane:
     key: str | None = None
 
 
+# *** MainWindow
+
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -63,6 +98,11 @@ class MainWindow(QMainWindow):
 
         self.menu_manager = MenuManager(self, self.central_widget.panes)
         self.menu_manager.build()
+
+
+# *** Helpers
+# **** Central Widget
+# ***** Constructor
 
 
 class CustomCentralWidget(QWidget):
@@ -93,34 +133,7 @@ class CustomCentralWidget(QWidget):
         layout.addWidget(main_layout)
         self.setLayout(layout)
 
-    def _create_tree_view(self):
-        tree_view = QTreeView()
-        return tree_view
-
-    def _create_output_text_edit(self):
-        text_edit = QTextEdit()
-        text_edit.setPlaceholderText("~ [ master][✘+?][🐍 v3.12.3(default)]")
-        text_edit.setReadOnly(True)
-        return text_edit
-
-    def _create_query_box(self):
-        query_box = QTextEdit()
-        query_box.setPlaceholderText("Enter your query here")
-        return query_box
-
-    def _create_search_bar(self):
-        search_bar = QLineEdit()
-        search_bar.setPlaceholderText("Search")
-
-        search_field = QComboBox()
-        search_field.addItem("Choose a Field")  # Note: placeholder item
-
-        return search_bar, search_field
-
-    def _create_model_selector(self):
-        choose_model = QComboBox()
-        choose_model.addItem("Choose a Model")  # Note: placeholder item
-        return choose_model
+    # ***** Layout Builders
 
     def _create_main_layout(self, handle_size):
         search_bar_widget = self._create_search_bar_widget()
@@ -173,6 +186,57 @@ class CustomCentralWidget(QWidget):
 
         return lower_pane
 
+    # ***** Widget Builders
+    # ****** Trees
+    def _create_tree_view(self):
+        tree_view = QTreeView()
+        return tree_view
+
+    # ****** Output
+
+    def _create_output_text_edit(self):
+        text_edit = QTextEdit()
+        text_edit.setPlaceholderText("~ [ master][✘+?][🐍 v3.12.3(default)]")
+        text_edit.setReadOnly(True)
+        return text_edit
+
+    # ****** Right Sidebar
+
+    def _create_query_box(self):
+        query_box = QTextEdit()
+        query_box.setPlaceholderText("Enter your query here")
+        return query_box
+
+    def _create_search_bar(self):
+        search_bar = QLineEdit()
+        search_bar.setPlaceholderText("Search")
+
+        search_field = QComboBox()
+        search_field.addItem("Choose a Field")  # Note: placeholder item
+
+        return search_bar, search_field
+
+    def _create_model_selector(self):
+        choose_model = QComboBox()
+        choose_model.addItem("Choose a Model")  # Note: placeholder item
+        return choose_model
+
+    def _create_ai_search_widget(self):
+        layout = QVBoxLayout()
+        layout.addWidget(self.ai_search)
+
+        button_layout = QHBoxLayout()
+        button_layout.addWidget(self.send_ai_search_button)
+        button_layout.addWidget(self.choose_model)
+
+        layout.addLayout(button_layout)
+
+        widget = QWidget()
+        widget.setLayout(layout)
+        return widget
+
+    # ****** Table
+
     def _create_search_bar_widget(self):
         layout = QHBoxLayout()
         layout.addWidget(self.search_bar)
@@ -191,28 +255,8 @@ class CustomCentralWidget(QWidget):
         widget.setLayout(layout)
         return widget
 
-    def _create_ai_search_widget(self):
-        layout = QVBoxLayout()
-        layout.addWidget(self.ai_search)
 
-        button_layout = QHBoxLayout()
-        button_layout.addWidget(self.send_ai_search_button)
-        button_layout.addWidget(self.choose_model)
-
-        layout.addLayout(button_layout)
-
-        widget = QWidget()
-        widget.setLayout(layout)
-        return widget
-
-
-class StandardIcon(Enum):
-    FILE = QStyle.StandardPixmap.SP_FileIcon
-    OPEN = QStyle.StandardPixmap.SP_DialogOpenButton
-    SAVE = QStyle.StandardPixmap.SP_DriveFDIcon
-    CUT = QStyle.StandardPixmap.SP_FileLinkIcon
-    COPY = QStyle.StandardPixmap.SP_DriveNetIcon
-    PASTE = QStyle.StandardPixmap.SP_DriveHDIcon
+# **** Menu Manager
 
 
 class MenuManager:
@@ -325,7 +369,9 @@ class MenuManager:
             action.setChecked(checked)
         return action
 
-    # Toggling Panes
+    # Toggling Panes ..........................................................
+
+    # Toggle Individual Pane --------
 
     # todo refactor to a method and pass main_window
     def _build_pane_toggle_action(self, pane: Pane) -> QAction:
@@ -349,7 +395,6 @@ class MenuManager:
 
     def _restore_all_panes(self) -> None:
         for p in self.panes.values():
-            # TODO we still need to track the last state
             p.widget.setVisible(p.last_state)
 
     def _maximize_table(self) -> None:
@@ -361,11 +406,7 @@ class MenuManager:
         self.maximized_table = not self.maximized_table
 
 
-def main() -> None:
-    app = QApplication(sys.argv)
-    main_window = MainWindow()
-    main_window.show()
-    sys.exit(app.exec())
+# **** Toolbars
 
 
 class ToolbarManager:
@@ -384,6 +425,8 @@ class ToolbarManager:
             if isinstance(action, QAction) and action.icon():
                 self.toolbar.addAction(action)
 
+
+# ** Entry Point
 
 if __name__ == "__main__":
     main()
