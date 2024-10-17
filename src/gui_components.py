@@ -1,7 +1,7 @@
 from typing import List, Dict, Tuple, Any
 from data_types import Field
-from PyQt6.QtWidgets import QTreeWidget, QTreeWidgetItem, QTableView, QWidget
-from PyQt6.QtGui import QStandardItemModel, QStandardItem
+from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem, QTableView, QWidget
+from PySide6.QtGui import QStandardItemModel, QStandardItem
 from database_manager import DatabaseManager
 
 

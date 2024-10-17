@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Callable, List, Dict, Optional
 import sys
-from PyQt6.QtWidgets import (
+from PySide6.QtWidgets import (
     QHBoxLayout,
     QVBoxLayout,
     QWidget,
@@ -12,12 +12,56 @@ from PyQt6.QtWidgets import (
     QTreeWidgetItem,
     QComboBox,
 )
-from PyQt6.QtCore import Qt, QUrl
-from PyQt6.QtQuickWidgets import QQuickWidget
+from PySide6.QtCore import Qt, QUrl
+from PySide6.QtQuickWidgets import QQuickWidget
 
 from database_manager import DatabaseManager
 from gui_components import DBFieldsView
 from ai_search_bar import AiSearchBar
+from data_types import DBElement, Database, Table
+
+
+class DBTreeDisplay2(QTreeWidget):
+    def __init__(
+        self, db_manager: DatabaseManager, parent: Optional[QWidget] = None
+    ) -> None:
+        super().__init__()
+        self.db_manager = db_manager
+        self.setHeaderLabels(["Database Objects"])
+        self.setColumnCount(1)
+        self.setSelectionMode(QTreeWidget.SelectionMode.NoSelection)
+        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+
+    def populate(self, db_name: DBElement) -> None:
+        self.clear()
+        match db_name:
+            case Database(dbname, _):
+                root = QTreeWidgetItem(self, [dbname])
+                root.setExpanded(True)
+
+                for table_name, fields in self.db_manager.get_tables_and_fields(
+                    dbname
+                ).items():
+                    table_item = QTreeWidgetItem(root, [table_name])
+                    for field in fields:
+                        _field_item = QTreeWidgetItem(table_item, [field])
+                    table_item.setExpanded(True)
+
+            case Table(table_name, dbname, _):
+                root = QTreeWidgetItem(self, [table_name])
+                root.setExpanded(True)
+
+                for table_name, fields in self.db_manager.get_fields(
+                    dbname, table_name
+                ).items():
+                    table_item = QTreeWidgetItem(root, [table_name])
+                    for field in fields:
+                        _field_item = QTreeWidgetItem(table_item, [field])
+                    table_item.setExpanded(True)
+            case _:
+                assert False
+
+        self.expandAll()
 
 
 class DBTreeDisplay(QTreeWidget):
@@ -207,3 +251,6 @@ class DBChooser(QComboBox):
         except Exception as e:
             self.log(f"Error listing databases: {str(e)}")
             return False
+
+
+# ** Footnotes

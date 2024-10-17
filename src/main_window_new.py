@@ -32,13 +32,19 @@ from enum import Enum
 # *** Local Imports
 from gui_components import DBTablesTree, TableView
 from data_types import ConnectionConfig
+from connection_widget import ConnectionWidget
+from database_manager import DatabaseManager
+from warning_types import TreeWarning, issue_warning
+from sql_query import DBTreeDisplay2
+from data_types import DBElement, Database, Table
 
 # ** Main Function
 
 
 def main() -> None:
     app = QApplication(sys.argv)
-    main_window = MainWindow("localhost", 5432, "postgres", None)
+    conf = ConnectionConfig("localhost", 5432, "postgres", None)
+    main_window = MainWindow(conf)
     main_window.show()
     sys.exit(app.exec())
 
@@ -104,7 +110,7 @@ class MainWindow(QMainWindow):
         self.settings = QSettings("RS", "DbBrowser")
 
         # Add Central Widget
-        self.central_widget = CustomCentralWidget(self, conf)
+        self.central_widget = CustomCentralWidget(self, conf, status)
         self.setCentralWidget(self.central_widget)
 
         self.menu_manager = MenuManager(self, self.central_widget.panes)
@@ -117,24 +123,35 @@ class MainWindow(QMainWindow):
 
 
 class CustomCentralWidget(QWidget):
-    def __init__(self, main_window: QMainWindow, conf: ConnectionConfig):
+    def __init__(
+        self, main_window: QMainWindow, conf: ConnectionConfig, status_bar: QStatusBar
+    ):
         super().__init__()
         self.conf = conf
+        self.status_bar = status_bar
+        self.db_manager = DatabaseManager(
+            conf.host, conf.port, conf.username, conf.password
+        )
         self.main_window = main_window
         self.setWindowTitle("PySide6 Minimal Example")
         self._initialize_ui()
 
     def _initialize_ui(self):
         self._setup_widgets()
+        self.update_db_tree()
 
     def _setup_widgets(self):
         # Initialize widgets
-        self.tree1 = self._create_tree_view()
-        self.tree2 = self._create_tree_view()
+        self.db_tree = self._create_tree_view()
+        self.db_tree.itemSelectionChanged.connect(self.on_tree_selection_changed)
+
+        self.field_tree = self._create_fields_tree_view()
+
         self.output_text_edit = self._create_output_text_edit()
         self.table_view = TableView()
+        self.connection_widget = ConnectionWidget(self.db_manager)
 
-        self.query_box = self._create_query_box()
+        self.query_edit = self._create_query_box()
         self.search_bar, self.search_field = self._create_search_bar()
         self.ai_search = QTextEdit()
         self.send_ai_search_button = QPushButton("Send AI Search")
@@ -146,6 +163,77 @@ class CustomCentralWidget(QWidget):
         layout.addWidget(main_layout)
         self.setLayout(layout)
 
+    # ***** Database
+    # ****** DB Tree
+    def update_db_tree(self) -> None:
+        connection_info = self.connection_widget.get_connection_info()
+        self.db_manager.update_connection(**connection_info)
+        try:
+            databases = self.db_manager.list_databases()
+            tables_dict = {db: self.db_manager.list_tables(db) for db in databases}
+            self.db_tree.populate(databases, tables_dict)
+            self.output_text_edit.append("Databases listed successfully.")
+            self.status_bar.showMessage("Databases listed")
+
+            # Update the db_chooser
+            self.query_edit.refresh()  # TODO query_edit is not defined
+
+        except Exception as e:
+            self.output_text_edit.append(f"Error listing databases: {str(e)}")
+            self.status_bar.showMessage("Error listing databases")
+
+    # ****** On Changed
+    def on_tree_selection_changed(self) -> None:
+        selected_items = self.db_tree.selectedItems()
+        if selected_items:
+            current_item = selected_items[0]
+            # If the current item is a database
+            if current_item.parent() is None:
+                dbname = Database(name=current_item.text(0))
+                self.output_text_edit.clear()
+                self.output_text_edit.append(f"Contents of database {dbname}:")
+                self.table_view.setModel(None)
+                self.status_bar.showMessage(f"Selected database: {dbname}")
+                self.field_tree.populate(dbname)
+            # If the current item is a table
+            else:
+                parent_item = current_item.parent()
+                if parent_item:
+                    dbname = Database(name=parent_item.text(0))
+                    table_name = Table(
+                        name=current_item.text(0).split(" ")[0],
+                        parent_db=dbname.name,
+                    )
+                    self.show_table_contents(dbname.name, table_name.name)
+                    # [fn_fields]
+                    self.field_tree.populate(table_name)
+
+    # ****** Table
+    def show_table_contents(self, dbname: str, table_name: str) -> None:
+        col_names, rows, success = self.db_manager.get_table_contents(
+            dbname, table_name
+        )
+        if success:
+            self.table_view.update_content(col_names, rows)
+            self.output_text_edit.clear()
+            if rows:
+                self.output_text_edit.append(
+                    f"Contents of {table_name} (first 5 rows):"
+                )
+                for row in rows[:5]:
+                    self.output_text_edit.append(f"  - {row}")
+            else:
+                self.output_text_edit.append(f"Table {table_name} is empty.")
+            self.status_bar.showMessage(f"Showing contents of table {table_name}")
+        else:
+            issue_warning(
+                message="Unable to get db_item from tree root",
+                warning_class=TreeWarning,
+            )
+            self.output_text_edit.append(f"Error: Table {table_name} does not exist.")
+            self.status_bar.showMessage(f"Error: Table {table_name} not found")
+            self.table_view.setModel(None)
+
     # ***** Layout Builders
 
     def _create_main_layout(self, handle_size):
@@ -155,11 +243,11 @@ class CustomCentralWidget(QWidget):
 
         self.right_sidebar = QSplitter(Qt.Orientation.Vertical)
         self.right_sidebar.addWidget(ai_search_widget)
-        self.right_sidebar.addWidget(self.query_box)
+        self.right_sidebar.addWidget(self.query_edit)
 
         left_sidebars = QSplitter(Qt.Orientation.Horizontal)
-        left_sidebars.addWidget(self.tree1)
-        left_sidebars.addWidget(self.tree2)
+        left_sidebars.addWidget(self.db_tree)
+        left_sidebars.addWidget(self.field_tree)
         left_sidebars.addWidget(table_widget)
         left_sidebars.addWidget(self.right_sidebar)
         left_sidebars.setSizes([100, 100, 400, 100])
@@ -177,13 +265,13 @@ class CustomCentralWidget(QWidget):
         self.panes: dict[str, Pane] = {
             "db_tree": Pane(
                 label="DB Tree",
-                widget=self.tree1,
-                last_state=self.tree1.isVisible(),
+                widget=self.db_tree,
+                last_state=self.db_tree.isVisible(),
             ),
             "field_tree": Pane(
                 label="Field Tree",
-                widget=self.tree2,
-                last_state=self.tree2.isVisible(),
+                widget=self.field_tree,
+                last_state=self.field_tree.isVisible(),
             ),
             "right_sidebar": Pane(
                 label="Right Sidebar",
@@ -201,8 +289,13 @@ class CustomCentralWidget(QWidget):
 
     # ***** Widget Builders
     # ****** Trees
+
     def _create_tree_view(self):
-        tree_view = QTreeView()
+        tree_view = DBTablesTree()
+        return tree_view
+
+    def _create_fields_tree_view(self):
+        tree_view = DBTreeDisplay2(self.db_manager)
         return tree_view
 
     # ****** Output
@@ -252,7 +345,7 @@ class CustomCentralWidget(QWidget):
 
     def _create_search_bar_widget(self):
         layout = QHBoxLayout()
-        layout.addWidget(self.search_bar)
+        layout.addWidget(self.search_bar)  # TODO Refactor into a Dialog
         layout.addWidget(self.search_field)
 
         widget = QWidget()
@@ -261,6 +354,7 @@ class CustomCentralWidget(QWidget):
 
     def _create_table_widget(self, search_bar_widget):
         layout = QVBoxLayout()
+        layout.addWidget(self.connection_widget)
         layout.addWidget(search_bar_widget)
         layout.addWidget(self.table_view)
 
@@ -443,3 +537,5 @@ class ToolbarManager:
 
 if __name__ == "__main__":
     main()
+
+# ** Footnotes

@@ -56,11 +56,11 @@ class MainWindow(QMainWindow):
         self.output_text_edit.setReadOnly(True)
         self.setup_main_area(main_layout)
 
-        self.list_databases()
+        self.update_db_tree()
 
     def setup_menu_bar(self) -> None:
         actions = [
-            ("Connect to Database", self.list_databases),
+            ("Connect to Database", self.update_db_tree),
             ("Refresh", self.refresh_databases),
             ("Create New Database", self.create_database),
             ("Delete Database", self.delete_database),
@@ -147,7 +147,7 @@ class MainWindow(QMainWindow):
         self.setStatusBar(self.status_bar)
         self.status_bar.showMessage("Ready")
 
-    def list_databases(self) -> None:
+    def update_db_tree(self) -> None:
         connection_info = self.connection_widget.get_connection_info()
         self.db_manager.update_connection(**connection_info)
         try:
@@ -244,7 +244,7 @@ class MainWindow(QMainWindow):
         if ok and dbname:
             if self.db_manager.create_database(dbname):
                 self.output_text_edit.append(f"Database {dbname} created successfully.")
-                self.list_databases()
+                self.update_db_tree()
                 self.status_bar.showMessage(f"Database {dbname} created successfully")
             else:
                 self.output_text_edit.append(f"Error creating database {dbname}.")
@@ -266,7 +266,7 @@ class MainWindow(QMainWindow):
                     self.output_text_edit.append(
                         f"Database {dbname} deleted successfully."
                     )
-                    self.list_databases()
+                    self.update_db_tree()
                     self.status_bar.showMessage(
                         f"Database {dbname} deleted successfully"
                     )
@@ -337,7 +337,7 @@ class MainWindow(QMainWindow):
 
     def refresh_databases(self) -> None:
         self.db_manager.connect()  # Reconnect to ensure we have the latest data
-        self.list_databases()
+        self.update_db_tree()
         self.output_text_edit.append("Database list refreshed.")
         self.status_bar.showMessage("Database list refreshed")
 

@@ -338,6 +338,7 @@ class DatabaseManager:
                 traceback.print_exc()
         return {}
 
+    # TODO this should use the Database type from data_types.py
     def get_tables_and_fields(self, dbname: str) -> Dict[str, List[str]]:
         """
         Get a dictionary of tables with their respective fields.
@@ -347,6 +348,17 @@ class DatabaseManager:
         tables_and_fields = {
             table: [field.name for field in fields]
             for table, fields in tables_and_fields_and_types.items()
+        }
+        return tables_and_fields
+
+    # TODO this is inefficient, Only need to get the fields from the table
+    # TODO this should use the Database type from data_types.py
+    def get_fields(self, dbname: str, table_name: str) -> Dict[str, list[str]]:
+        tables_and_fields_and_types = self.get_tables_and_fields_and_types(dbname)
+        tables_and_fields = {
+            table: [field.name for field in fields]
+            for table, fields in tables_and_fields_and_types.items()
+            if table == table_name
         }
         return tables_and_fields
 
