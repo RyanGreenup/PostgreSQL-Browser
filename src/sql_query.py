@@ -15,10 +15,11 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import QUrl
 from PySide6.QtQuickWidgets import QQuickWidget
 
+from data_types import Database, Table
 from database_manager import DatabaseManager
 from gui_components import DBFieldsView
 from ai_search_bar import AiSearchBar
-from data_types import DBElement, Database, Table
+from data_types import DBElement
 
 
 class DBTreeDisplay(QTreeWidget):
@@ -95,9 +96,9 @@ class SQLQueryEditor(QTextEdit):
         super().__init__(parent)
         self.setPlaceholderText("Enter your SQL query here...")
 
-    def set_default_query(self, database: str) -> None:
+    def set_default_query(self, database: Database) -> None:
         self.setText(
-            f"SELECT * FROM information_schema.tables WHERE table_schema = 'public' AND table_catalog = '{database}';"
+            f"SELECT * FROM information_schema.tables WHERE table_schema = 'public' AND table_catalog = '{database.name}';"
         )
 
 

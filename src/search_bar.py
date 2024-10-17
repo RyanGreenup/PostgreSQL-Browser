@@ -6,6 +6,8 @@ from database_manager import DatabaseManager
 from warning_types import issue_warning, DatabaseWarning
 from gui_components import DBTablesTree
 
+from data_types import DBItemType
+
 
 class SearchWidget(QWidget):
     search_performed = pyqtSignal(str, list)  # New signal
@@ -51,9 +53,8 @@ class SearchWidget(QWidget):
 
     def update_field_combo_box(self):
         self.field_combo_box.clear()
-        selected_table = self.db_tree.get_selected_table()
-        print(f"Selected table: {selected_table}")  # Debug print
-        if selected_table:
+        if self.db_tree.get_current_item_type() == DBItemType.TABLE:
+            selected_table = self.db_tree.get_selected_table()
             try:
                 db_name = self.db_manager.current_database
                 if db_name:

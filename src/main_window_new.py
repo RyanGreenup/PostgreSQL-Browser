@@ -36,6 +36,8 @@ from warning_types import TreeWarning, issue_warning
 from sql_query import DBTreeDisplay
 from data_types import Database, Table
 from search_bar import SearchWidget
+from sql_query import SQLQueryEditor
+from data_types import DBItemType
 
 # ** Main Function
 
@@ -155,6 +157,8 @@ class CustomCentralWidget(QWidget):
         self.main_window = main_window
         self.setWindowTitle("PySide6 Minimal Example")
         self._initialize_ui()
+        # Get first db_tree_item
+        self.on_different_db_selected(Database(name=self.db_tree.get_first_db()))
 
     def _initialize_ui(self):
         self._setup_widgets()
@@ -188,9 +192,29 @@ class CustomCentralWidget(QWidget):
         self.setLayout(layout)
 
     # ***** Database
+    # ****** Query
+    def get_current_database(self) -> str:
+        return self.db_tree.get_current_database()
+
+    def execute_custom_query(self) -> None:
+        """
+        Excecutes a query from the query_edit box
+        On the Database selected in the `db_tree`
+        by passing it to `db_manager.execute_custom_query`
+        Finally updates the `table_view` with the result
+        """
+        # TODO finish this and add to menu
+        current_database = self.get_current_database()
+        query = self.query_edit.toPlainText()
+        result = self.db_manager.execute_custom_query(current_database, query)
+
+        # TODO should this be a method?
+        if isinstance(result, tuple) and len(result) == 2:
+            columns, rows = result
+            self.table_view.update_content(columns, [list(row) for row in rows])
 
     # ****** Field Tree
-    # ****** On Changed
+    # ******* On Changed
     def on_field_tree_selection_changed(self) -> None:
         print("TODO Fix call back so this fires")
         selected_items = self.field_tree.selectedItems()
@@ -219,38 +243,72 @@ class CustomCentralWidget(QWidget):
             self.output_text_edit.append("Databases listed successfully.")
             self.status_bar.showMessage("Databases listed")
 
-            # Update the db_chooser
-            self.query_edit.refresh()  # TODO query_edit is not defined
-
         except Exception as e:
             self.output_text_edit.append(f"Error listing databases: {str(e)}")
             self.status_bar.showMessage("Error listing databases")
 
-    # ****** On Changed
+    # ******* On Changed
+    # MAYBE_DONE if I jump from one db to another, the tables are not updated
+    #   TODO I think I fixed this, but need to test
+    # Must always check current database
+    # TODO dead code
     def on_db_tree_selection_changed(self) -> None:
-        selected_items = self.db_tree.selectedItems()
-        if selected_items:
-            current_item = selected_items[0]
-            # If the current item is a database
-            if current_item.parent() is None:
-                dbname = Database(name=current_item.text(0))
-                self.output_text_edit.clear()
-                self.output_text_edit.append(f"Contents of database {dbname}:")
-                self.table_view.setModel(None)
-                self.status_bar.showMessage(f"Selected database: {dbname}")
-                self.field_tree.populate(dbname)
-            # If the current item is a table
-            else:
-                parent_item = current_item.parent()
-                if parent_item:
-                    dbname = Database(name=parent_item.text(0))
-                    table_name = Table(
-                        name=current_item.text(0).split(" ")[0],
-                        parent_db=dbname.name,
+        # selected_items = self.db_tree.selectedItems()
+        # if selected_items:
+        #     current_item = selected_items[0]
+        #     # If the current item is a database
+        #     if current_item.parent() is None:
+        #         self.on_different_db_selected(Database(name=current_item.text(0)))
+        #     # If the current item is a table
+        #     else:
+        #         parent_item = current_item.parent()
+        #         if parent_item:
+        #             dbname = Database(name=parent_item.text(0))
+        #             table_name = Table(
+        #                 name=current_item.text(0).split(" ")[0],
+        #                 parent_db=dbname.name,
+        #             )
+        #             self.on_different_table_selected(table_name)
+        if current_selection := self.db_tree.get_selected_item():
+            match self.db_tree.get_current_item_type():
+                case DBItemType.DATABASE:
+                    self.on_different_db_selected(
+                        Database(name=self.db_tree.currentItem().text(0))
                     )
-                    self.show_table_contents(dbname.name, table_name.name)
-                    # [fn_fields]
-                    self.field_tree.populate(table_name)
+                case DBItemType.TABLE:
+                    table_name = Table(
+                        name=current_selection.split(" ")[0],
+                        parent_db=self.db_tree.get_current_database(),
+                    )
+                    self.on_different_table_selected(table_name)
+
+    def on_different_db_selected(self, database: Database) -> None:
+        self.current_database = (
+            database  # TODO should the db_manager track this instead?
+        )
+        # Is the db_manager dependent on the specific database though?
+        # I think it instead manages the entire pg connection
+        self.output_text_edit.clear()
+        self.output_text_edit.append(f"Contents of database {database}:")
+        self.table_view.setModel(None)
+        self.status_bar.showMessage(f"Selected database: {database}")
+        self.field_tree.populate(database)
+
+        self.query_edit.set_default_query(database)
+
+    def on_different_table_selected(self, table: Table) -> None:
+        if self._did_db_change(table.parent_db):
+            # Get the current database
+            self.db_tree.get_current_database()
+
+        assert (db_name := table.parent_db), "Table must have a parent database"
+        self.show_table_contents(db_name, table.name)
+        self.field_tree.populate(table)
+
+    def _did_db_change(self, db_name: str) -> bool:
+        if hasattr(self, "current_database"):
+            return db_name != self.current_database
+        return False
 
     # ****** Table
     def show_table_contents(self, dbname: str, table_name: str) -> None:
@@ -352,7 +410,7 @@ class CustomCentralWidget(QWidget):
     # ****** Right Sidebar
 
     def _create_query_box(self):
-        query_box = QTextEdit()
+        query_box = SQLQueryEditor()
         query_box.setPlaceholderText("Enter your query here")
         return query_box
 
@@ -399,6 +457,8 @@ class CustomCentralWidget(QWidget):
 class MenuManager:
     def __init__(self, main_window: MainWindow, panes: dict[str, Pane]):
         self.main_window = main_window
+        self.central_widget = main_window.central_widget
+        self.db_manager = self.central_widget.db_manager
         self.panes = panes
 
     def _create_toolbar(self) -> None:
@@ -457,6 +517,13 @@ class MenuManager:
                     "Ctrl+D",
                     callback=lambda: self.main_window.toggle_theme(),
                     icon=StandardIcon.DARK_MODE,
+                ),
+            },
+            "&Database": {
+                "&Execute Query": self._action_builder(
+                    "Ctrl+E",
+                    # TODO this should be a method of the central widget
+                    callback=lambda: self.central_widget.execute_custom_query(),
                 ),
             },
             "&Help": {"&About": self._action_builder("Ctrl+,")},

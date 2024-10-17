@@ -5,6 +5,11 @@ from typing import Optional
 from typing import Union
 
 
+class DBItemType(Enum):
+    DATABASE = "database"
+    TABLE = "table"
+
+
 # Database Elements
 class DBType(Enum):
     SQLITE = "sqlite"

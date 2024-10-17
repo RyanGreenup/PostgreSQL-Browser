@@ -1,8 +1,12 @@
 from typing import List, Dict, Tuple, Any
+
+from PySide6.QtCore import Qt
 from data_types import Field
 from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem, QTableView, QWidget
 from PySide6.QtGui import QStandardItemModel, QStandardItem
 from database_manager import DatabaseManager
+
+from data_types import DBItemType
 
 
 class DBTablesTree(QTreeWidget):
@@ -16,12 +20,46 @@ class DBTablesTree(QTreeWidget):
         self.clear()
         for db in databases:
             db_item = QTreeWidgetItem(self, [db])
+            # Track whether the item is a database or table
+            self._set_db_item_type(db_item, DBItemType.DATABASE)
             try:
                 for table, table_type in tables_dict.get(db, []):
-                    QTreeWidgetItem(db_item, [f"{table} ({table_type})"])
+                    tab_item = QTreeWidgetItem(db_item, [f"{table} ({table_type})"])
+                    self._set_db_item_type(tab_item, DBItemType.TABLE)
             except Exception as e:
                 print(e)
 
+    def get_first_db(self) -> str:
+        """
+        A callback function that returns the first database
+        """
+        first_item = self.topLevelItem(0)
+        # Check it's a database
+        assert (
+            self._get_db_item_type(first_item) == DBItemType.DATABASE
+        ), "First item in DB Tree is not a database"
+        return first_item.text(0)
+
+    def _set_attribute(self, item: QTreeWidgetItem, key: str, value: Any) -> None:
+        item.setData(0, Qt.ItemDataRole.UserRole, {key: value})
+
+    def _get_attribute(self, item: QTreeWidgetItem, key: str) -> Any:
+        return item.data(0, Qt.ItemDataRole.UserRole).get(key)
+
+    def _set_db_item_type(self, item: QTreeWidgetItem, item_type: DBItemType) -> None:
+        self._set_attribute(item, "type", item_type)
+
+    def _get_db_item_type(self, item: QTreeWidgetItem) -> DBItemType:
+        return self._get_attribute(item, "type")
+
+    def get_current_item_type(self) -> DBItemType:
+        """
+        Get the type of the current item
+        """
+        current_item = self.currentItem()
+        return self._get_db_item_type(current_item)
+
+    # TODO is this really needed? grep and vulture to pull it out
     def get_selected_item(self) -> str | None:
         """
         A callback function that returns the selected database
@@ -34,9 +72,31 @@ class DBTablesTree(QTreeWidget):
         """
         A callback function that returns the selected table
         """
-        if item := self.currentItem():
-            return item.text(0).split()[0]
+        if current_item := self.currentItem():
+            match self._get_db_item_type(current_item):
+                case DBItemType.TABLE:
+                    return current_item.text(0).split()[0]
+                case _:
+                    assert False, "Attempted to get a table from a non-table selection"
         return None
+
+    def is_selected_database(self) -> bool:
+        """
+        A callback function that returns whether the selected item is a database
+        """
+        current_item = self.currentItem()
+        return self._get_db_item_type(current_item) == DBItemType.DATABASE
+
+    def get_current_database(self) -> str:
+        """
+        Get the Database of the current Selection
+        """
+        current_item = self.currentItem()
+        match self._get_db_item_type(current_item):
+            case DBItemType.DATABASE:
+                return current_item.text(0)
+            case DBItemType.TABLE:
+                return current_item.parent().text(0)
 
 
 class DBFieldsView(QTreeWidget):
