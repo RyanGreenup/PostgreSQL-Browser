@@ -15,7 +15,6 @@ from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
     QHBoxLayout,
-    QLineEdit,
     QMainWindow,
     QPushButton,
     QSplitter,
@@ -126,7 +125,6 @@ class MainWindow(QMainWindow):
         self.menu_manager.build()
 
     def set_css(self, css_file: str) -> None:
-
         with open(css_file, "r") as file:
             stylesheet = file.read()
             self.setStyleSheet(stylesheet)
@@ -169,7 +167,9 @@ class CustomCentralWidget(QWidget):
 
         self.field_tree = self._create_fields_tree_view()
         # TODO this doesn't seem to fire?
-        self.field_tree.itemSelectionChanged.connect(self.on_field_tree_selection_changed)
+        self.field_tree.itemSelectionChanged.connect(
+            self.on_field_tree_selection_changed
+        )
 
         self.output_text_edit = self._create_output_text_edit()
         self.table_view = TableView()
@@ -200,14 +200,13 @@ class CustomCentralWidget(QWidget):
             if len(selected_items) == 1:
                 current_item = selected_items[0]
                 # Is this the first item?
-                if current_item ==  current_item.parent() is None:
+                if current_item == current_item.parent() is None:
                     # In this case, combo box should be cleared
                     # All fields should now be searched
                     return
                 else:
                     # Set the search bar to the text of the item
                     self.search_bar.setFieldifAvailable(current_item.text(0))
-
 
     # ****** DB Tree
     def update_db_tree(self) -> None:
@@ -454,7 +453,11 @@ class MenuManager:
             },
             "&View": {
                 "&Zoom In": self._action_builder("Ctrl++"),
-                "&Dark Mode": self._action_builder("Ctrl+D", callback=lambda: self.main_window.toggle_theme(), icon=StandardIcon.DARK_MODE),
+                "&Dark Mode": self._action_builder(
+                    "Ctrl+D",
+                    callback=lambda: self.main_window.toggle_theme(),
+                    icon=StandardIcon.DARK_MODE,
+                ),
             },
             "&Help": {"&About": self._action_builder("Ctrl+,")},
         }

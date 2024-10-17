@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Callable, List, Dict, Optional
+from typing import Callable, List, Optional
 import sys
 from PySide6.QtWidgets import (
     QHBoxLayout,
@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
     QTreeWidgetItem,
     QComboBox,
 )
-from PySide6.QtCore import Qt, QUrl
+from PySide6.QtCore import QUrl
 from PySide6.QtQuickWidgets import QQuickWidget
 
 from database_manager import DatabaseManager
@@ -84,6 +84,7 @@ class DBTreeDisplay(QTreeWidget):
 #
 #         self.expandAll()
 #
+
 
 class SQLQueryEditor(QTextEdit):
     """
