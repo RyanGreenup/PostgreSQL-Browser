@@ -3,6 +3,7 @@
 # * Database Manager ..........................................................
 # ** Imports
 
+# *** External Imports
 from collections.abc import Callable
 import sys
 from dataclasses import dataclass
@@ -27,6 +28,9 @@ from PySide6.QtWidgets import (
     QStyle,
 )
 from enum import Enum
+
+# *** Local Imports
+from gui_components import DBTablesTree, TableView
 
 # ** Main Function
 
@@ -120,7 +124,8 @@ class CustomCentralWidget(QWidget):
         self.tree1 = self._create_tree_view()
         self.tree2 = self._create_tree_view()
         self.output_text_edit = self._create_output_text_edit()
-        self.table1 = QTableView()
+        self.table_view = TableView()
+
         self.query_box = self._create_query_box()
         self.search_bar, self.search_field = self._create_search_bar()
         self.ai_search = QTextEdit()
@@ -249,7 +254,7 @@ class CustomCentralWidget(QWidget):
     def _create_table_widget(self, search_bar_widget):
         layout = QVBoxLayout()
         layout.addWidget(search_bar_widget)
-        layout.addWidget(self.table1)
+        layout.addWidget(self.table_view)
 
         widget = QWidget()
         widget.setLayout(layout)
