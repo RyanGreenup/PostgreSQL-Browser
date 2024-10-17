@@ -7,7 +7,7 @@
 from collections.abc import Callable
 import sys
 from dataclasses import dataclass
-from typing import Optional, List
+from typing import Optional
 from PySide6.QtCore import QSettings, Qt
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
@@ -19,10 +19,8 @@ from PySide6.QtWidgets import (
     QPushButton,
     QSplitter,
     QStatusBar,
-    QTableView,
     QTextEdit,
     QToolBar,
-    QTreeView,
     QVBoxLayout,
     QWidget,
     QStyle,
@@ -36,7 +34,7 @@ from connection_widget import ConnectionWidget
 from database_manager import DatabaseManager
 from warning_types import TreeWarning, issue_warning
 from sql_query import DBTreeDisplay2
-from data_types import DBElement, Database, Table
+from data_types import Database, Table
 
 # ** Main Function
 

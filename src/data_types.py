@@ -3,7 +3,6 @@ from enum import Enum
 from dataclasses import dataclass
 from typing import Optional
 from typing import Union
-from typing import NewType
 
 
 # Database Elements
