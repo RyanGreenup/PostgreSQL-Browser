@@ -86,7 +86,6 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(v1)
 
-
         # Create a Menu Bar
         menu = self.menuBar()
         file_menu = menu.addMenu("File")

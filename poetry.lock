@@ -410,7 +410,18 @@ files = [
     {file = "typing_extensions-4.12.2.tar.gz", hash = "sha256:1a7ead55c7e559dd4dee8856e3a88b41225abfe1ce8df57b7c13915fe121ffb8"},
 ]
 
+[[package]]
+name = "vulture"
+version = "2.13"
+description = "Find dead code"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "vulture-2.13-py2.py3-none-any.whl", hash = "sha256:34793ba60488e7cccbecdef3a7fe151656372ef94fdac9fe004c52a4000a6d44"},
+    {file = "vulture-2.13.tar.gz", hash = "sha256:78248bf58f5eaffcc2ade306141ead73f437339950f80045dce7f8b078e5a1aa"},
+]
+
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "7066e6fbf5e8f6f4020e42ad05cac7579ce06e260355f88705a8dfc2b9faa5e7"
+content-hash = "f38bc603641deed928fb8c28b22da1106a319207a04330772d8e092ca08adb41"

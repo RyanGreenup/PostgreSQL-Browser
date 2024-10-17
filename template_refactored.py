@@ -1,9 +1,9 @@
 from collections.abc import Callable
 import sys
 from dataclasses import dataclass
-from typing import Dict, Optional, List
+from typing import Optional, List
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QAction, QIcon
+from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
@@ -27,10 +27,21 @@ from enum import Enum
 
 @dataclass
 class Pane:
+    """
+    Represents a pane of the GUI
+
+    Attributes:
+        label: A string representing the label of the pane.
+        widget: The QWidget associated with this pane.
+        last_state: A boolean indicating whether the pane was visible last time it was hidden. (used for maximizing table view)
+        action: An optional QAction for toggling the visibility of this pane.
+    """
+
     label: str
     widget: QWidget
     last_state: bool
     action: QAction | None = None
+    key: str | None = None
 
 
 class MainWindow(QMainWindow):
@@ -132,24 +143,25 @@ class CustomCentralWidget(QWidget):
 
         # Store the panes as an attribute so they can be
         # manipulated by menu items
-        self.panes = {
-            "Ctrl+1": Pane(
-                label="Toggle DB Tree",
+
+        self.panes: dict[str, Pane] = {
+            "db_tree": Pane(
+                label="DB Tree",
                 widget=self.tree1,
                 last_state=self.tree1.isVisible(),
             ),
-            "Ctrl+2": Pane(
-                label="Toggle Field Tree",
+            "field_tree": Pane(
+                label="Field Tree",
                 widget=self.tree2,
                 last_state=self.tree2.isVisible(),
             ),
-            "Ctrl+3": Pane(
-                label="Toggle Right Sidebar",
+            "right_sidebar": Pane(
+                label="Right Sidebar",
                 widget=self.right_sidebar,
                 last_state=self.right_sidebar.isVisible(),
             ),
-            "Ctrl+4": Pane(
-                label="Toggle Output",
+            "output": Pane(
+                label="Output",
                 widget=self.output_text_edit,
                 last_state=self.output_text_edit.isVisible(),
             ),
@@ -228,73 +240,67 @@ class MenuManager:
                 # Add action
                 menu.addAction(value)
 
-
     def setup_menus(self) -> None:
+        self.maximized_table = False
         menu_bar = self.main_window.menuBar()
 
-        menu_desc = {
+        key_map = {
+            "db_tree": "F1",
+            "field_tree": "F2",
+            "right_sidebar": "F3",
+            "output": "F4",
+        }
+
+        # Update the key attribute for each pane.
+        for pk, key in key_map.items():
+            self.panes[pk].key = key
+
+        # Store as an attribute so the Actions can be used by the toolbar
+        self.menu_desc = {
             "File": {
                 "New": self._action_builder("New", "Ctrl+N", icon=StandardIcon.FILE),
                 "Open": self._action_builder("Open", "Ctrl+O", icon=StandardIcon.OPEN),
                 "Save": self._action_builder("Save", "Ctrl+S", icon=StandardIcon.SAVE),
                 "Save As": self._action_builder("Save As", "Ctrl+Shift+S"),
-                "Exit": self._action_builder("Exit", "Ctrl+Q")
+                "Exit": self._action_builder("Exit", "Ctrl+Q"),
             },
             "Edit": {
                 "Undo": self._action_builder("Undo", "Ctrl+Z"),
                 "Redo": self._action_builder("Redo", "Ctrl+Y"),
                 "Cut": self._action_builder("Cut", "Ctrl+X", icon=StandardIcon.CUT),
                 "Copy": self._action_builder("Copy", "Ctrl+C", icon=StandardIcon.COPY),
-                "Paste": self._action_builder("Paste", "Ctrl+V", icon=StandardIcon.PASTE),
+                "Paste": self._action_builder(
+                    "Paste", "Ctrl+V", icon=StandardIcon.PASTE
+                ),
             },
             "View": {
                 "Zoom In": self._action_builder("Zoom In", "Ctrl++"),
             },
-            "Help": {
-                "About": self._action_builder("About")
-            },
+            "Help": {"About": self._action_builder("About", "Ctrl+,")},
         }
 
-        self._add_toolbar_actions(menu_desc)
+        # Add Pane Togge Logic
+        menu_desc_view = self.menu_desc["View"]
+        menu_desc_view["UI"] = {  # pyright: ignore
+            f"Toggle {p.label}": self._build_pane_toggle_action(p)
+            for p in self.panes.values()
+        }
 
-        # file_menu = menu_bar.addMenu("File")
-        # self._add_menu_actions(file_menu, ["New", "Open", "Save", "Save As", "Exit"])
-        #
-        # edit_menu = menu_bar.addMenu("Edit")
-        # self._add_menu_actions(edit_menu, ["Undo", "Redo", "Cut", "Copy"])
-        #
-        # view_menu = menu_bar.addMenu("View")
-        # view_menu.addAction("Zoom In")
-        #
-        # help_menu = menu_bar.addMenu("Help")
-        # help_menu.addAction("About")
-
-        # Deal with Toggling Panes
-        ui_menu = view_menu.addMenu("UI")
-
-        # Associate QActions with Panes for toggling them
-        for key, pane in self.panes.items():
-            pane.action = self._create_toggle_action(pane.label, key, pane.widget)
-            assert pane.action is not None
-        [
-            ui_menu.addAction(pane.action)
-            for pane in self.panes.values()
-            if pane.action is not None
-        ]
-
-        self.maximized_table = False
-        hide_all_action = self._action_builder(
-            "Hide All Sidebars", "Ctrl+0", lambda: self._maximize_table(self.panes)
+        menu_desc_view["UI"]["Maximize Table"] = self._action_builder(
+            "Maximize Table",
+            "Ctrl+M",
+            callback=self._maximize_table,
+            icon=StandardIcon.COPY,
         )
-        ui_menu.addAction(hide_all_action)
+
+        self._add_menus_recursive(menu_bar, self.menu_desc)
 
     # Action Factory
-
     def _action_builder(
         self,
         label: str,
         key: str,
-        callback: Optional[Callable[[], None]] = None,
+        callback: Optional[Callable] = None,
         icon: Optional[StandardIcon] = None,
         checked: Optional[bool] = False,
     ) -> QAction:
@@ -306,44 +312,44 @@ class MenuManager:
         action.setShortcut(key)
         if callback:
             action.triggered.connect(callback)
-        if checked is not None:
+        if checked:
             action.setCheckable(True)
             action.setChecked(checked)
         return action
 
-    @staticmethod
-    def _add_menu_actions(menu: QMenu, actions: List[str]) -> None:
-        for action_text in actions:
-            menu.addAction(action_text)
-
     # Toggling Panes
 
-    # Actions for Toggling
-
-    def toggle_widget(self, widget: QWidget) -> None:
-        widget.setVisible(not widget.isVisible())
-
-    def _create_toggle_action(self, label: str, key: str, widget: QWidget) -> QAction:
+    # todo refactor to a method and pass main_window
+    def _build_pane_toggle_action(self, pane: Pane) -> QAction:
+        assert (
+            pane.key
+        ), "Attempt to build pane toggle Action without associated Key Bind"
         return self._action_builder(
-            label, key, lambda: self.toggle_widget(widget), checked=True
+            "Toggle " + pane.label,
+            pane.key,
+            # lambda: print("Triggered" + pane.label)
+            lambda: pane.widget.setVisible(not pane.widget.isVisible()),
         )
 
-    # Pane Toggle Logic
+    def toggle_widget(self, widget: QWidget) -> Callable:
+        return lambda: widget.setVisible(not widget.isVisible())
 
-    def _hide_all_panes(self, panes: Dict[str, Pane]) -> None:
-        for pane in panes.values():
+    # Pane Toggle Logic
+    def _hide_all_panes(self) -> None:
+        for pane in self.panes.values():
             pane.last_state = pane.widget.isVisible()
             pane.widget.setVisible(False)
 
-    def _restore_all_panes(self, panes: Dict[str, Pane]) -> None:
-        for pane in panes.values():
-            pane.widget.setVisible(pane.last_state)
+    def _restore_all_panes(self) -> None:
+        for p in self.panes.values():
+            # TODO we still need to track the last state
+            p.widget.setVisible(p.last_state)
 
-    def _maximize_table(self, panes: Dict[str, Pane]) -> None:
+    def _maximize_table(self) -> None:
         if self.maximized_table:
-            self._restore_all_panes(panes)
+            self._restore_all_panes()
         else:
-            self._hide_all_panes(panes)
+            self._hide_all_panes()
 
         self.maximized_table = not self.maximized_table
 
