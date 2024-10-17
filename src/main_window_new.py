@@ -8,7 +8,7 @@ from collections.abc import Callable
 import sys
 from dataclasses import dataclass
 from typing import Optional, List
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QSettings, Qt
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QApplication,
@@ -31,6 +31,7 @@ from enum import Enum
 
 # *** Local Imports
 from gui_components import DBTablesTree, TableView
+from data_types import ConnectionConfig
 
 # ** Main Function
 
@@ -90,11 +91,7 @@ class Pane:
 class MainWindow(QMainWindow):
     def __init__(
         self,
-        host: str,
-        port: int,
-        username: str,
-        password: str | None,
-        openai_url: str = "http://localhost:11434",
+        conf: ConnectionConfig,
     ):
         super().__init__()
 
@@ -103,8 +100,11 @@ class MainWindow(QMainWindow):
         status.showMessage("Status Bar")
         self.setStatusBar(status)
 
+        # Settings
+        self.settings = QSettings("RS", "DbBrowser")
+
         # Add Central Widget
-        self.central_widget = CustomCentralWidget(self)
+        self.central_widget = CustomCentralWidget(self, conf)
         self.setCentralWidget(self.central_widget)
 
         self.menu_manager = MenuManager(self, self.central_widget.panes)
@@ -117,8 +117,9 @@ class MainWindow(QMainWindow):
 
 
 class CustomCentralWidget(QWidget):
-    def __init__(self, main_window: QMainWindow):
+    def __init__(self, main_window: QMainWindow, conf: ConnectionConfig):
         super().__init__()
+        self.conf = conf
         self.main_window = main_window
         self.setWindowTitle("PySide6 Minimal Example")
         self._initialize_ui()
