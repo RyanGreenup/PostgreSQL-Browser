@@ -30,7 +30,6 @@ class DBTreeDisplay(QTreeWidget):
         self.setHeaderLabels(["Database Objects"])
         self.setColumnCount(1)
         self.setSelectionMode(QTreeWidget.SelectionMode.NoSelection)
-        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
 
     def populate(self, db_name: DBElement) -> None:
         self.clear()

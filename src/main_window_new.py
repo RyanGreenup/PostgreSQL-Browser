@@ -36,6 +36,7 @@ from database_manager import DatabaseManager
 from warning_types import TreeWarning, issue_warning
 from sql_query import DBTreeDisplay
 from data_types import Database, Table
+from search_bar import SearchWidget
 
 # ** Main Function
 
@@ -107,7 +108,7 @@ class MainWindow(QMainWindow):
         self.light_theme = os.path.join(os.path.dirname(__file__), self.light_theme)
         self.dark_theme = os.path.join(os.path.dirname(__file__), self.dark_theme)
         self.light_mode = True
-        self.set_css(self.light_theme)
+        # self.set_css(self.light_theme)
 
         # Status Bar
         status = QStatusBar(self)
@@ -164,16 +165,18 @@ class CustomCentralWidget(QWidget):
     def _setup_widgets(self):
         # Initialize widgets
         self.db_tree = self._create_tree_view()
-        self.db_tree.itemSelectionChanged.connect(self.on_tree_selection_changed)
+        self.db_tree.itemSelectionChanged.connect(self.on_db_tree_selection_changed)
 
         self.field_tree = self._create_fields_tree_view()
+        # TODO this doesn't seem to fire?
+        self.field_tree.itemSelectionChanged.connect(self.on_field_tree_selection_changed)
 
         self.output_text_edit = self._create_output_text_edit()
         self.table_view = TableView()
         self.connection_widget = ConnectionWidget(self.db_manager)
 
         self.query_edit = self._create_query_box()
-        self.search_bar, self.search_field = self._create_search_bar()
+        self.search_bar = self._create_search_bar()
         self.ai_search = QTextEdit()
         self.send_ai_search_button = QPushButton("Send AI Search")
         self.choose_model = self._create_model_selector()
@@ -185,6 +188,27 @@ class CustomCentralWidget(QWidget):
         self.setLayout(layout)
 
     # ***** Database
+
+    # ****** Field Tree
+    # ****** On Changed
+    def on_field_tree_selection_changed(self) -> None:
+        print("TODO Fix call back so this fires")
+        selected_items = self.field_tree.selectedItems()
+        # Check if anything is selected
+        if selected_items:
+            # If only the first item is selected
+            if len(selected_items) == 1:
+                current_item = selected_items[0]
+                # Is this the first item?
+                if current_item ==  current_item.parent() is None:
+                    # In this case, combo box should be cleared
+                    # All fields should now be searched
+                    return
+                else:
+                    # Set the search bar to the text of the item
+                    self.search_bar.setFieldifAvailable(current_item.text(0))
+
+
     # ****** DB Tree
     def update_db_tree(self) -> None:
         connection_info = self.connection_widget.get_connection_info()
@@ -204,7 +228,7 @@ class CustomCentralWidget(QWidget):
             self.status_bar.showMessage("Error listing databases")
 
     # ****** On Changed
-    def on_tree_selection_changed(self) -> None:
+    def on_db_tree_selection_changed(self) -> None:
         selected_items = self.db_tree.selectedItems()
         if selected_items:
             current_item = selected_items[0]
@@ -258,8 +282,7 @@ class CustomCentralWidget(QWidget):
     # ***** Layout Builders
 
     def _create_main_layout(self, handle_size):
-        search_bar_widget = self._create_search_bar_widget()
-        table_widget = self._create_table_widget(search_bar_widget)
+        table_widget = self._create_table_widget(self.search_bar)
         ai_search_widget = self._create_ai_search_widget()
 
         self.right_sidebar = QSplitter(Qt.Orientation.Vertical)
@@ -335,13 +358,9 @@ class CustomCentralWidget(QWidget):
         return query_box
 
     def _create_search_bar(self):
-        search_bar = QLineEdit()
-        search_bar.setPlaceholderText("Search")
+        search_bar = SearchWidget(self.db_manager, self.db_tree, self.table_view)
 
-        search_field = QComboBox()
-        search_field.addItem("Choose a Field")  # Note: placeholder item
-
-        return search_bar, search_field
+        return search_bar
 
     def _create_model_selector(self):
         choose_model = QComboBox()
@@ -363,15 +382,6 @@ class CustomCentralWidget(QWidget):
         return widget
 
     # ****** Table
-
-    def _create_search_bar_widget(self):
-        layout = QHBoxLayout()
-        layout.addWidget(self.search_bar)  # TODO Refactor into a Dialog
-        layout.addWidget(self.search_field)
-
-        widget = QWidget()
-        widget.setLayout(layout)
-        return widget
 
     def _create_table_widget(self, search_bar_widget):
         layout = QVBoxLayout()

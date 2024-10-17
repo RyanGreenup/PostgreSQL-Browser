@@ -1,6 +1,6 @@
-from PyQt6.QtWidgets import QApplication, QComboBox, QHBoxLayout, QLineEdit, QWidget
-from gui_components import TableView
 from PyQt6.QtCore import pyqtSignal
+from PySide6.QtWidgets import QApplication, QComboBox, QHBoxLayout, QLineEdit, QWidget
+from gui_components import TableView
 import sys
 from database_manager import DatabaseManager
 from warning_types import issue_warning, DatabaseWarning
@@ -23,6 +23,9 @@ class SearchWidget(QWidget):
     def setup_ui(self):
         layout = QHBoxLayout()
         self.search_bar = QLineEdit()
+        # TODO, selecting a field in the `field_tree` should change the combo box
+        # TODO searching numbers doesn't work
+        # TODO Selecting table name in `field_tree` should set to search all fields
         self.search_bar.setPlaceholderText("Search for a term")
         self.search_bar.textChanged.connect(self.search_db)
         # TODO map this to CTL+SPACE
@@ -34,6 +37,14 @@ class SearchWidget(QWidget):
         layout.addWidget(self.search_bar)
         layout.addWidget(self.field_combo_box)
         self.setLayout(layout)
+
+    def setFieldifAvailable(self, text):
+        for f in range(self.field_combo_box.count()):
+            if self.field_combo_box.itemText(f) == text:
+                self.field_combo_box.setCurrentIndex(f)
+                return
+            else:
+                issue_warning(f"Field {text} not found", DatabaseWarning)
 
     def select_nothing(self):
         self.field_combo_box.setCurrentIndex(-1)
