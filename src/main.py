@@ -5,7 +5,9 @@ from PyQt6.QtWidgets import QApplication
 import typer
 from typing import Optional
 
-from main_window import MainWindow
+from data_types import ConnectionConfig
+
+from main_window_new import MainWindow
 
 app = typer.Typer()
 
@@ -21,7 +23,8 @@ def main(
     openai_url: str = typer.Option("http://localhost:11434", help="OpenAI API URL"),
 ) -> None:
     qt_app = QApplication(sys.argv)
-    main_window = MainWindow(host, port, username, password, openai_url)
+    conf = ConnectionConfig(host, port, username, password, openai_url)
+    main_window = MainWindow(conf)
     main_window.show()
     sys.exit(qt_app.exec())
 
