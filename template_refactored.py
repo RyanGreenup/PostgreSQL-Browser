@@ -10,7 +10,6 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLineEdit,
     QMainWindow,
-    QMenu,
     QPushButton,
     QSplitter,
     QStatusBar,
@@ -23,6 +22,11 @@ from PySide6.QtWidgets import (
     QStyle,
 )
 from enum import Enum
+
+
+# A temporary Label to use for actions
+# These are replaced by the Dict Keys before Assignment
+TEMP_LABEL = "TEMP LABEL"
 
 
 @dataclass
@@ -237,7 +241,8 @@ class MenuManager:
                 submenu = menu.addMenu(key)
                 self._add_menus_recursive(submenu, value)  # Recurse into the dict
             elif isinstance(value, QAction):
-                # Add action
+                # Set the label of the action and add it to the menu
+                value.setText(key.strip("&"))  # Set the label to the key
                 menu.addAction(value)
 
     def setup_menus(self) -> None:
@@ -257,37 +262,34 @@ class MenuManager:
 
         # Store as an attribute so the Actions can be used by the toolbar
         self.menu_desc = {
-            "File": {
-                "New": self._action_builder("New", "Ctrl+N", icon=StandardIcon.FILE),
-                "Open": self._action_builder("Open", "Ctrl+O", icon=StandardIcon.OPEN),
-                "Save": self._action_builder("Save", "Ctrl+S", icon=StandardIcon.SAVE),
-                "Save As": self._action_builder("Save As", "Ctrl+Shift+S"),
-                "Exit": self._action_builder("Exit", "Ctrl+Q"),
+            "&File": {
+                "&New": self._action_builder("Ctrl+N", icon=StandardIcon.FILE),
+                "&Open": self._action_builder("Ctrl+O", icon=StandardIcon.OPEN),
+                "&Save": self._action_builder("Ctrl+S", icon=StandardIcon.SAVE),
+                "Save &As": self._action_builder("Ctrl+Shift+S"),
+                "&Exit": self._action_builder("Ctrl+Q"),
             },
-            "Edit": {
-                "Undo": self._action_builder("Undo", "Ctrl+Z"),
-                "Redo": self._action_builder("Redo", "Ctrl+Y"),
-                "Cut": self._action_builder("Cut", "Ctrl+X", icon=StandardIcon.CUT),
-                "Copy": self._action_builder("Copy", "Ctrl+C", icon=StandardIcon.COPY),
-                "Paste": self._action_builder(
-                    "Paste", "Ctrl+V", icon=StandardIcon.PASTE
-                ),
+            "&Edit": {
+                "&Undo": self._action_builder("Ctrl+Z"),
+                "&Redo": self._action_builder("Ctrl+Y"),
+                "&Cut": self._action_builder("Ctrl+X", icon=StandardIcon.CUT),
+                "C&opy": self._action_builder("Ctrl+C", icon=StandardIcon.COPY),
+                "&Paste": self._action_builder("Ctrl+V", icon=StandardIcon.PASTE),
             },
-            "View": {
-                "Zoom In": self._action_builder("Zoom In", "Ctrl++"),
+            "&View": {
+                "&Zoom In": self._action_builder("Ctrl++"),
             },
-            "Help": {"About": self._action_builder("About", "Ctrl+,")},
+            "&Help": {"&About": self._action_builder("Ctrl+,")},
         }
 
         # Add Pane Togge Logic
-        menu_desc_view = self.menu_desc["View"]
-        menu_desc_view["UI"] = {  # pyright: ignore
-            f"Toggle {p.label}": self._build_pane_toggle_action(p)
+        menu_desc_view = self.menu_desc["&View"]
+        menu_desc_view["&UI"] = {  # pyright: ignore
+            f"Toggle &{p.label}": self._build_pane_toggle_action(p)
             for p in self.panes.values()
         }
 
-        menu_desc_view["UI"]["Maximize Table"] = self._action_builder(
-            "Maximize Table",
+        menu_desc_view["&UI"]["&Maximize Table"] = self._action_builder(
             "Ctrl+M",
             callback=self._maximize_table,
             icon=StandardIcon.COPY,
@@ -298,7 +300,6 @@ class MenuManager:
     # Action Factory
     def _action_builder(
         self,
-        label: str,
         key: str,
         callback: Optional[Callable] = None,
         icon: Optional[StandardIcon] = None,
@@ -306,9 +307,9 @@ class MenuManager:
     ) -> QAction:
         if icon:
             qicon = self.main_window.style().standardIcon(icon.value)
-            action = QAction(qicon, label, self.main_window)
+            action = QAction(qicon, TEMP_LABEL, self.main_window)
         else:
-            action = QAction(label, self.main_window)
+            action = QAction(TEMP_LABEL, self.main_window)
         action.setShortcut(key)
         if callback:
             action.triggered.connect(callback)
@@ -325,7 +326,6 @@ class MenuManager:
             pane.key
         ), "Attempt to build pane toggle Action without associated Key Bind"
         return self._action_builder(
-            "Toggle " + pane.label,
             pane.key,
             # lambda: print("Triggered" + pane.label)
             lambda: pane.widget.setVisible(not pane.widget.isVisible()),
