@@ -1,0 +1,97 @@
+/* General App Styles */
+QMainWindow {
+    background-color: #F0F0F0; /* Light grey typical of MacOS */
+    border: none;
+}
+
+QWidget {
+    font-family: "San Francisco", Helvetica, Arial, sans-serif; /* Apple's default font */
+    font-size: 13px;
+    color: #000000; /* Black for text */
+}
+
+/* QPushButton Styles */
+QPushButton {
+    background-color: #E1E1E1; /* Light grey button */
+    border: 1px solid #D0D0D0;
+    border-radius: 5px;
+    padding: 5px 10px;
+}
+
+QPushButton:hover {
+    background-color: #DADADA; /* Slightly darker on hover */
+}
+
+QPushButton:pressed {
+    background-color: #B0B0B0; /* Darker when pressed */
+}
+
+/* QLineEdit Styles */
+QLineEdit {
+    background-color: #FFFFFF; /* White background */
+    border: 1px solid #C0C0C0;
+    border-radius: 4px;
+    padding: 5px;
+    margin: 5px;
+    selection-background-color: #007AFF; /* MacOS blue selection */
+}
+
+/* QLabel Styles */
+QLabel {
+    font-size: 13px;
+    color: #000000;
+}
+
+/* QMenuBar Styles */
+QMenuBar {
+    background-color: #EAEAEA;
+    padding: 5px;
+}
+
+QMenuBar::item {
+    background: transparent;
+    padding: 5px 10px;
+    margin: 0px;
+}
+
+QMenuBar::item:selected {
+    background: #DADADA;
+    border-radius: 4px;
+}
+
+/* QStatusBar Styles */
+QStatusBar {
+    border-top: 1px solid #D0D0D0;
+    background-color: #F0F0F0;
+}
+
+/* QScrollBar Styles */
+QScrollBar:vertical {
+    border: none;
+    background: #F0F0F0;
+    width: 10px;
+    margin: 0px;
+}
+
+QScrollBar::handle:vertical {
+    background: #C0C0C0;
+    min-height: 20px;
+    border-radius: 5px;
+}
+
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical {
+    background: none;
+    height: 0px;
+}
+
+/* Tooltips */
+QToolTip {
+    border: 1px solid #C0C0C0;
+    background-color: #FFFFFF;
+    color: #000000;
+    padding: 5px;
+    border-radius: 5px;
+    opacity: 200;
+}
+

@@ -1,0 +1,112 @@
+/* General styling */
+QWidget {
+    background-color: #ffffff;
+    font-family: 'Segoe UI', 'Arial', sans-serif;
+    font-size: 12px;
+    color: #333333;
+}
+
+/* Style for push buttons */
+QPushButton {
+    background-color: #007bff;
+    color: #ffffff;
+    border: none;
+    border-radius: 5px;
+    padding: 10px 15px;
+}
+
+QPushButton:hover {
+    background-color: #0056b3;
+}
+
+QPushButton:pressed {
+    background-color: #004494;
+}
+
+/* Style for labels */
+QLabel {
+    font-size: 14px;
+    padding: 5px;
+}
+
+/* Style for LineEdits */
+QLineEdit {
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    padding: 8px;
+    font-size: 13px;
+}
+
+QLineEdit:focus {
+    border: 1px solid #007bff;
+}
+
+/* Style for checkboxes */
+QCheckBox {
+    padding: 5px;
+}
+
+QCheckBox::indicator {
+    width: 20px;
+    height: 20px;
+}
+
+QCheckBox::indicator:checked {
+    background-color: #007bff;
+    border: 1px solid #007bff;
+}
+
+/* Style for radio buttons */
+QRadioButton {
+    padding: 5px;
+}
+
+QRadioButton::indicator {
+    width: 20px;
+    height: 20px;
+}
+
+QRadioButton::indicator:checked {
+    background-color: #007bff;
+    border: 1px solid #007bff;
+}
+
+/* Styling scroll bars to be more touch-friendly */
+QScrollBar:vertical {
+    border: none;
+    background: #f1f1f1;
+    width: 12px;
+    margin: 22px 0 22px 0;
+}
+
+QScrollBar::handle:vertical {
+    background: #c1c1c1;
+    min-height: 20px;
+    border-radius: 6px;
+}
+
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical {
+    height: 0px;
+}
+
+/* Styling for combo boxes */
+QComboBox {
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    padding: 8px;
+    background-color: #ffffff;
+}
+
+QComboBox::drop-down {
+    border: none;
+}
+
+QComboBox QAbstractItemView {
+    border: 1px solid #cccccc;
+    selection-background-color: #007bff;
+}
+
+
+
+

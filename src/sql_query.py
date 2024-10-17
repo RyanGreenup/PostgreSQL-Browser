@@ -21,7 +21,7 @@ from ai_search_bar import AiSearchBar
 from data_types import DBElement, Database, Table
 
 
-class DBTreeDisplay2(QTreeWidget):
+class DBTreeDisplay(QTreeWidget):
     def __init__(
         self, db_manager: DatabaseManager, parent: Optional[QWidget] = None
     ) -> None:
@@ -64,27 +64,27 @@ class DBTreeDisplay2(QTreeWidget):
         self.expandAll()
 
 
-class DBTreeDisplay(QTreeWidget):
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
-        super().__init__(parent)
-        self.setHeaderLabels(["Database Objects"])
-        self.setColumnCount(1)
-        self.setSelectionMode(QTreeWidget.SelectionMode.NoSelection)
-        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-
-    def populate(self, db_name: str, tables_and_fields: Dict[str, List[str]]) -> None:
-        self.clear()
-        root = QTreeWidgetItem(self, [db_name])
-        root.setExpanded(True)
-
-        for table_name, fields in tables_and_fields.items():
-            table_item = QTreeWidgetItem(root, [table_name])
-            for field in fields:
-                _field_item = QTreeWidgetItem(table_item, [field])
-            table_item.setExpanded(True)
-
-        self.expandAll()
-
+# class DBTreeDisplay(QTreeWidget):
+#     def __init__(self, parent: Optional[QWidget] = None) -> None:
+#         super().__init__(parent)
+#         self.setHeaderLabels(["Database Objects"])
+#         self.setColumnCount(1)
+#         self.setSelectionMode(QTreeWidget.SelectionMode.NoSelection)
+#         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+#
+#     def populate(self, db_name: str, tables_and_fields: Dict[str, List[str]]) -> None:
+#         self.clear()
+#         root = QTreeWidgetItem(self, [db_name])
+#         root.setExpanded(True)
+#
+#         for table_name, fields in tables_and_fields.items():
+#             table_item = QTreeWidgetItem(root, [table_name])
+#             for field in fields:
+#                 _field_item = QTreeWidgetItem(table_item, [field])
+#             table_item.setExpanded(True)
+#
+#         self.expandAll()
+#
 
 class SQLQueryEditor(QTextEdit):
     """

@@ -5,6 +5,7 @@
 
 # *** External Imports
 from collections.abc import Callable
+import os
 import sys
 from dataclasses import dataclass
 from typing import Optional
@@ -33,7 +34,7 @@ from data_types import ConnectionConfig
 from connection_widget import ConnectionWidget
 from database_manager import DatabaseManager
 from warning_types import TreeWarning, issue_warning
-from sql_query import DBTreeDisplay2
+from sql_query import DBTreeDisplay
 from data_types import Database, Table
 
 # ** Main Function
@@ -65,6 +66,7 @@ class StandardIcon(Enum):
     CUT = QStyle.StandardPixmap.SP_FileLinkIcon
     COPY = QStyle.StandardPixmap.SP_DriveNetIcon
     PASTE = QStyle.StandardPixmap.SP_DriveHDIcon
+    DARK_MODE = QStyle.StandardPixmap.SP_DialogApplyButton
 
 
 # **** Pane
@@ -99,6 +101,14 @@ class MainWindow(QMainWindow):
     ):
         super().__init__()
 
+        # Set the style sheet
+        self.light_theme = "app_styles_mobile_style.css"
+        self.dark_theme = "app_styles_mobile_style_dark.css"
+        self.light_theme = os.path.join(os.path.dirname(__file__), self.light_theme)
+        self.dark_theme = os.path.join(os.path.dirname(__file__), self.dark_theme)
+        self.light_mode = True
+        self.set_css(self.light_theme)
+
         # Status Bar
         status = QStatusBar(self)
         status.showMessage("Status Bar")
@@ -113,6 +123,19 @@ class MainWindow(QMainWindow):
 
         self.menu_manager = MenuManager(self, self.central_widget.panes)
         self.menu_manager.build()
+
+    def set_css(self, css_file: str) -> None:
+
+        with open(css_file, "r") as file:
+            stylesheet = file.read()
+            self.setStyleSheet(stylesheet)
+
+    def toggle_theme(self) -> None:
+        if self.light_mode:
+            self.set_css(self.dark_theme)
+        else:
+            self.set_css(self.light_theme)
+        self.light_mode = not self.light_mode
 
 
 # *** Helpers
@@ -293,7 +316,7 @@ class CustomCentralWidget(QWidget):
         return tree_view
 
     def _create_fields_tree_view(self):
-        tree_view = DBTreeDisplay2(self.db_manager)
+        tree_view = DBTreeDisplay(self.db_manager)
         return tree_view
 
     # ****** Output
@@ -421,6 +444,7 @@ class MenuManager:
             },
             "&View": {
                 "&Zoom In": self._action_builder("Ctrl++"),
+                "&Dark Mode": self._action_builder("Ctrl+D", callback=lambda: self.main_window.toggle_theme(), icon=StandardIcon.DARK_MODE),
             },
             "&Help": {"&About": self._action_builder("Ctrl+,")},
         }
