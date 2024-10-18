@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
     QInputDialog,
 )
 from pathlib import Path
+from pathlib import Path
 from warning_types import UserError
 
 # *** Local Imports
@@ -245,6 +246,32 @@ class CustomCentralWidget(QWidget):
                         "Import Failed",
                         f"Failed to import table '{table_name}' from {file_path}",
                     )
+
+    def export_database_to_parquet(self):
+        current_db = self.get_current_database()
+        if not current_db:
+            QMessageBox.warning(self.main_window, "Export Failed", "Please select a database to export.")
+            return
+
+        directory = QFileDialog.getExistingDirectory(self.main_window, "Select Directory for Export")
+        if directory:
+            success = self.db_manager.export_database_to_parquet(current_db, Path(directory))
+            if success:
+                QMessageBox.information(self.main_window, "Export Successful", f"Database '{current_db}' exported successfully to {directory}")
+            else:
+                QMessageBox.warning(self.main_window, "Export Failed", f"Failed to export database '{current_db}'")
+
+    def import_database_from_parquet(self):
+        directory = QFileDialog.getExistingDirectory(self.main_window, "Select Directory to Import From")
+        if directory:
+            db_name, ok = QInputDialog.getText(self.main_window, "Import Database", "Enter the name for the new database:")
+            if ok and db_name:
+                success = self.db_manager.import_database_from_parquet(db_name, Path(directory))
+                if success:
+                    QMessageBox.information(self.main_window, "Import Successful", f"Database '{db_name}' imported successfully from {directory}")
+                    self.update_db_tree()  # Refresh the database tree
+                else:
+                    QMessageBox.warning(self.main_window, "Import Failed", f"Failed to import database '{db_name}' from {directory}")
 
     # ****** AI Search
     def on_ai_search(self) -> None:
