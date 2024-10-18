@@ -4,6 +4,12 @@ from dataclasses import dataclass
 from typing import Optional
 from typing import Union
 
+from PySide6.QtGui import QAction
+from PySide6.QtWidgets import (
+    QWidget,
+    QStyle,
+)
+
 
 class DBItemType(Enum):
     DATABASE = "database"
@@ -48,3 +54,32 @@ class ConnectionConfig:
     username: str
     password: Optional[str] = None
     openai_url: str = "http://localhost:11434"
+
+
+@dataclass
+class Pane:
+    """
+    Represents a pane of the GUI
+
+    Attributes:
+        label: A string representing the label of the pane.
+        widget: The QWidget associated with this pane.
+        last_state: A boolean indicating whether the pane was visible last time it was hidden. (used for maximizing table view)
+        action: An optional QAction for toggling the visibility of this pane.
+    """
+
+    label: str
+    widget: QWidget
+    last_state: bool
+    action: QAction | None = None
+    key: str | None = None
+
+
+class StandardIcon(Enum):
+    FILE = QStyle.StandardPixmap.SP_FileIcon
+    OPEN = QStyle.StandardPixmap.SP_DialogOpenButton
+    SAVE = QStyle.StandardPixmap.SP_DriveFDIcon
+    CUT = QStyle.StandardPixmap.SP_FileLinkIcon
+    COPY = QStyle.StandardPixmap.SP_DriveNetIcon
+    PASTE = QStyle.StandardPixmap.SP_DriveHDIcon
+    DARK_MODE = QStyle.StandardPixmap.SP_DialogApplyButton

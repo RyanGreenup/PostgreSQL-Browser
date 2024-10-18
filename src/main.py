@@ -5,11 +5,12 @@ from PySide6.QtWidgets import QApplication
 import typer
 from typing import Optional
 
-from data_types import ConnectionConfig, DBType
+from data_types import ConnectionConfig
 
 from main_window_new import MainWindow
 
 app = typer.Typer()
+
 
 @app.command()
 def postgres(
@@ -27,25 +28,31 @@ def postgres(
     main_window.show()
     sys.exit(qt_app.exec())
 
+
 @app.command()
 def sqlite():
     raise NotImplementedError("SQLite support is not yet implemented")
+
 
 @app.command()
 def mysql():
     raise NotImplementedError("MySQL support is not yet implemented")
 
+
 @app.command()
 def mariadb():
     raise NotImplementedError("MariaDB support is not yet implemented")
+
 
 @app.command()
 def oracle():
     raise NotImplementedError("Oracle support is not yet implemented")
 
+
 @app.command()
 def mssql():
     raise NotImplementedError("MSSQL support is not yet implemented")
+
 
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal.SIG_DFL)

@@ -1,12 +1,21 @@
-from PySide6.QtWidgets import QWidget, QLineEdit, QComboBox, QPushButton, QHBoxLayout, QVBoxLayout
+from PySide6.QtWidgets import (
+    QWidget,
+    QLineEdit,
+    QComboBox,
+    QPushButton,
+    QHBoxLayout,
+    QVBoxLayout,
+)
 from database_manager.pgsql import DatabaseManager
 from openai_query import OpenAIQueryManager
 from dataclasses import dataclass
+
 
 @dataclass
 class PromptResponse:
     user_input: str
     ai_response: str
+
 
 class LLMManager:
     def __init__(
@@ -24,6 +33,7 @@ class LLMManager:
 
     def list_models(self) -> list[str]:
         return self.open_ai_query_manager.get_available_models()
+
 
 # TODO to be LLMManager not search bar
 class AiSearchBar(QWidget):
@@ -115,5 +125,3 @@ class AiSearchBar(QWidget):
 
     def set_focus(self):
         self.search_bar.setFocus()
-
-

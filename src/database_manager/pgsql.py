@@ -1,5 +1,4 @@
 import psycopg2
-import json
 import io
 from sqlalchemy import create_engine, MetaData
 import traceback
@@ -403,11 +402,11 @@ class DatabaseManager(AbstractDatabaseManager):
             with engine.connect() as connection:
                 # Drop the table if it exists
                 connection.execute(f"DROP TABLE IF EXISTS {table_name}")
-                
+
                 # Create the table
                 create_table_query = f"CREATE TABLE {table_name} ({', '.join([f'{col} {dtype}' for col, dtype in zip(df.columns, df.dtypes)])})"
                 connection.execute(create_table_query)
-                
+
                 # Insert data
                 df.write_database(table_name, connection)
 
@@ -415,6 +414,7 @@ class DatabaseManager(AbstractDatabaseManager):
         except Exception as e:
             issue_warning(f"Error importing Parquet file to table: {e}", QueryWarning)
             return False
+
 
 # Footnotes
 # [fn cur_err]
