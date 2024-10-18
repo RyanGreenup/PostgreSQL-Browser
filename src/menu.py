@@ -12,7 +12,7 @@ from pathlib import Path
 # *** Local Imports
 from data_types import Pane, StandardIcon
 from toolbar import ToolbarManager
-from warning_types import DatabaseWarning
+from warning_types import DatabaseWarning, issue_warning
 
 # ** Constants
 # *** Temp label for QAction's
