@@ -10,8 +10,10 @@ from PySide6.QtCore import QSettings, Qt
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
+    QFileDialog,
     QHBoxLayout,
     QMainWindow,
+    QMessageBox,
     QPushButton,
     QSplitter,
     QStatusBar,
@@ -19,13 +21,14 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from pathlib import Path
 
 # *** Local Imports
 from gui_components import DBTablesTree, TableView
 from data_types import ConnectionConfig, Pane, Database, Table, DBItemType
 from connection_widget import ConnectionWidget
 from database_manager.pgsql import DatabaseManager
-from warning_types import TreeWarning, issue_warning, OpenAIWarning
+from warning_types import TreeWarning, issue_warning, OpenAIWarning, UserError
 from sql_query import DBTreeDisplay
 from search_bar import SearchWidget
 from sql_query import SQLQueryEditor
@@ -151,6 +154,51 @@ class CustomCentralWidget(QWidget):
         self.setLayout(layout)
 
     # ***** Database
+    # ****** Export and Import
+    def _export_table_to_parquet(self):
+        # Get the currently selected database and table
+        current_db = self.get_current_database()
+        current_table = self.get_current_table()
+
+        if not current_db or not current_table:
+            # TODO Wrap output_text_edit, issue_warning, status_bar and Popup Dialogs in a class
+            # to make the behavior consistent
+            issue_warning("Please select a database and table to export.", UserError)
+            # Create a popup dialog to inform the user
+            QMessageBox.warning(
+                self.main_window,
+                "Export Failed",
+                "Please select a database and table to export.",
+            )
+            return
+
+        # Open a file dialog to choose the save location
+        file_path, _ = QFileDialog.getSaveFileName(
+            self.main_window, "Save Parquet File", "", "Parquet Files (*.parquet)"
+        )
+
+        if file_path:
+            if not file_path.endswith(".parquet"):
+                file_path += ".parquet"
+
+            # Call the export method
+            success = self.db_manager.export_table_to_parquet(
+                current_db, current_table, Path(file_path)
+            )
+
+            if success:
+                QMessageBox.information(
+                    self.main_window,
+                    "Export Successful",
+                    f"Table '{current_table}' exported successfully to {file_path}",
+                )
+            else:
+                QMessageBox.warning(
+                    self.main_window,
+                    "Export Failed",
+                    f"Failed to export table '{current_table}'",
+                )
+
     # ****** AI Search
     def on_ai_search(self) -> None:
         print("---")
@@ -182,6 +230,9 @@ class CustomCentralWidget(QWidget):
     # ****** Query
     def get_current_database(self) -> str:
         return self.db_tree.get_current_database()
+
+    def get_current_table(self) -> str:
+        return self.db_tree.get_selected_table()
 
     def execute_custom_query(self) -> None:
         """

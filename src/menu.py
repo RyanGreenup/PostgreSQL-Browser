@@ -4,15 +4,11 @@ from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QMainWindow,
     QWidget,
-    QFileDialog,
-    QMessageBox,
 )
-from pathlib import Path
 
 # *** Local Imports
 from data_types import Pane, StandardIcon
 from toolbar import ToolbarManager
-from warning_types import DatabaseWarning, issue_warning
 
 # ** Constants
 # *** Temp label for QAction's
@@ -25,40 +21,9 @@ TEMP_LABEL = "TEMP LABEL"
 class MenuManager:
     def __init__(self, main_window: QMainWindow, panes: dict[str, Pane]):
         self.main_window = main_window
-        self.central_widget = main_window.central_widget
+        self.central_widget = main_window.central_widget  # type:ignore # (Can't Import MainWindow as circular, adc is overkill)
         self.db_manager = self.central_widget.db_manager
         self.panes = panes
-
-    def _export_table_to_parquet(self):
-        # Get the currently selected database and table
-        current_db = self.central_widget.db_chooser.currentText()
-        current_table = self.central_widget.sql_query.tree_display.currentItem()
-        
-        if not current_db or not current_table:
-            issue_warning("Please select a database and table to export.", DatabaseWarning)
-            return
-
-        table_name = current_table.text(0)  # Assuming the table name is in the first column
-
-        # Open a file dialog to choose the save location
-        file_path, _ = QFileDialog.getSaveFileName(
-            self.main_window,
-            "Save Parquet File",
-            "",
-            "Parquet Files (*.parquet)"
-        )
-
-        if file_path:
-            if not file_path.endswith('.parquet'):
-                file_path += '.parquet'
-
-            # Call the export method
-            success = self.db_manager.export_table_to_parquet(current_db, table_name, Path(file_path))
-
-            if success:
-                QMessageBox.information(self.main_window, "Export Successful", f"Table '{table_name}' exported successfully to {file_path}")
-            else:
-                QMessageBox.warning(self.main_window, "Export Failed", f"Failed to export table '{table_name}'")
 
     def _create_toolbar(self) -> None:
         toolbar_manager = ToolbarManager(self.main_window, self.menu_desc)
@@ -131,7 +96,7 @@ class MenuManager:
                 ),
                 "&Export Table to Parquet": self._action_builder(
                     "Ctrl+Shift+E",
-                    callback=self._export_table_to_parquet,
+                    callback=self.central_widget._export_table_to_parquet,
                     icon=StandardIcon.SAVE,
                 ),
             },

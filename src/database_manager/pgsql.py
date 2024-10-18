@@ -1,6 +1,6 @@
 import psycopg2
 import io
-from sqlalchemy import create_engine, MetaData
+from sqlalchemy import create_engine, MetaData, text
 import traceback
 import polars as pl
 from pathlib import Path
@@ -372,10 +372,22 @@ class DatabaseManager(AbstractDatabaseManager):
 
         try:
             # Create SQLAlchemy engine
+            # NOTE Polars uses sqlalchemy anyway
+            # (can use builtin Rust one but it fails ocassionally)
             engine = create_engine(self.get_connection_url())
 
+            # Check if table_name is valid
+            allowed_tables = self.get_tables_and_fields(dbname)
+            if table_name not in allowed_tables:
+                raise ValueError(
+                    "Invalid Table Passed to Export Despite Being Selected from Tree"
+                )
+                return False
+
+            # Use text to create the query safely
+            query = text(f'SELECT * FROM "{text(table_name)}"')
+
             # Read the table into a Polars DataFrame
-            query = f"SELECT * FROM {table_name}"
             df = pl.read_database(query, engine)
 
             # Write the Polars DataFrame to Parquet file

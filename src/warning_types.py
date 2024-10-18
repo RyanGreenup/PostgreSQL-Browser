@@ -3,6 +3,10 @@ import traceback
 from typing import Optional
 
 
+class UserError(Warning):
+    """Base class for user-related warnings."""
+
+
 # Write OPENAI Warning class
 class OpenAIWarning(Warning):
     """Base class for OpenAI-related warnings."""
