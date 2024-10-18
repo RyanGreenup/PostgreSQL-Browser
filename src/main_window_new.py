@@ -30,7 +30,7 @@ from gui_components import DBTablesTree, TableView
 from data_types import ConnectionConfig, Pane, Database, Table, DBItemType
 from connection_widget import ConnectionWidget
 from database_manager.pgsql import DatabaseManager
-from warning_types import TreeWarning, issue_warning, OpenAIWarning, UserError
+from warning_types import TreeWarning, issue_warning, OpenAIWarning
 from sql_query import DBTreeDisplay
 from search_bar import SearchWidget
 from sql_query import SQLQueryEditor
@@ -204,7 +204,7 @@ class CustomCentralWidget(QWidget):
     def import_table_from_parquet(self):
         # Get the currently selected database
         current_db = self.get_current_database()
-        
+
         if not current_db:
             issue_warning("Please select a database to import into.", UserError)
             QMessageBox.warning(
@@ -216,29 +216,26 @@ class CustomCentralWidget(QWidget):
 
         # Open a file dialog to choose the Parquet file
         file_path, _ = QFileDialog.getOpenFileName(
-            self.main_window,
-            "Open Parquet File",
-            "",
-            "Parquet Files (*.parquet)"
+            self.main_window, "Open Parquet File", "", "Parquet Files (*.parquet)"
         )
 
         if file_path:
             # Ask for the new table name
             table_name, ok = QInputDialog.getText(
-                self.main_window, 
-                "Import Table", 
-                "Enter the name for the new table:"
+                self.main_window, "Import Table", "Enter the name for the new table:"
             )
 
             if ok and table_name:
                 # Call the import method
-                success = self.db_manager.import_table_as_parquet(current_db, table_name, Path(file_path))
+                success = self.db_manager.import_table_as_parquet(
+                    current_db, table_name, Path(file_path)
+                )
 
                 if success:
                     QMessageBox.information(
                         self.main_window,
                         "Import Successful",
-                        f"Table '{table_name}' imported successfully from {file_path}"
+                        f"Table '{table_name}' imported successfully from {file_path}",
                     )
                     # Refresh the table list
                     self.update_db_tree()
@@ -246,7 +243,7 @@ class CustomCentralWidget(QWidget):
                     QMessageBox.warning(
                         self.main_window,
                         "Import Failed",
-                        f"Failed to import table '{table_name}' from {file_path}"
+                        f"Failed to import table '{table_name}' from {file_path}",
                     )
 
     # ****** AI Search

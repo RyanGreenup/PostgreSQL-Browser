@@ -19,3 +19,6 @@ S
 
 Add SQLite Backend
 Add MS SQL Backend
+
+Export all tables to dir
+Import all tables from dir

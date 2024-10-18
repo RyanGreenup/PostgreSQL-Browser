@@ -1,6 +1,7 @@
 import psycopg2
 import io
-from sqlalchemy import create_engine, MetaData, text
+from sqlalchemy import create_engine, Table, Column, MetaData, String, Integer, text
+from sqlalchemy.exc import IntegrityError, ProgrammingError
 import traceback
 import polars as pl
 from pathlib import Path
@@ -365,6 +366,7 @@ class DatabaseManager(AbstractDatabaseManager):
         }
         return tables_and_fields
 
+    # TODO when this is called, must rebuild the tree
     def export_table_to_parquet(self, dbname: str, table_name: str, path: Path) -> bool:
         if not self.connect(dbname):
             issue_warning("Unable to connect to the database", ConnectionWarning)
@@ -398,6 +400,7 @@ class DatabaseManager(AbstractDatabaseManager):
             issue_warning(f"Error exporting table to Parquet: {e}", QueryWarning)
             return False
 
+    # TODO when this is called, must rebuild the tree
     def import_table_as_parquet(self, dbname: str, table_name: str, path: Path) -> bool:
         if not self.connect(dbname):
             issue_warning("Unable to connect to the database", ConnectionWarning)
@@ -409,20 +412,35 @@ class DatabaseManager(AbstractDatabaseManager):
 
             # Create SQLAlchemy engine
             engine = create_engine(self.get_connection_url())
+            metadata = MetaData()
 
-            # Write DataFrame to SQL table
             with engine.connect() as connection:
-                # Drop the table if it exists
-                connection.execute(f"DROP TABLE IF EXISTS {table_name}")
+                # Refresh metadata to reflect the current database schema
+                metadata.reflect(bind=engine)
 
-                # Create the table
-                create_table_query = f"CREATE TABLE {table_name} ({', '.join([f'{col} {dtype}' for col, dtype in zip(df.columns, df.dtypes)])})"
-                connection.execute(create_table_query)
+                if table_name in self.get_tables_and_fields(dbname):
+                    issue_warning("Table already exists, aborting.", UserWarning)
+                    return False
 
-                # Insert data
+                # Convert Polars DataFrame to SQLAlchemy columns
+                columns = [
+                    Column(col, String) if dtype == pl.Utf8 else Column(col, Integer)
+                    for col, dtype in zip(df.columns, df.dtypes)
+                ]
+
+                # Create the table if it does not exist
+                new_table = Table(table_name, metadata, *columns)
+
+                # Use SQLAlchemy's `create_all` method to handle table creation if it doesn't exist
+                metadata.create_all(engine, tables=[new_table])
+
+                # Insert data into the table
                 df.write_database(table_name, connection)
 
             return True
+        except (IntegrityError, ProgrammingError) as e:
+            issue_warning(f"Database error: {e}", QueryWarning)
+            return False
         except Exception as e:
             issue_warning(f"Error importing Parquet file to table: {e}", QueryWarning)
             return False
