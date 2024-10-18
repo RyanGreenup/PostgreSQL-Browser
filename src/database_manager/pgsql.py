@@ -14,12 +14,14 @@ from warning_types import (
 from psycopg2.extensions import connection as PsycopgConnection
 from typing import Optional, List, Tuple, Union, Dict, Any
 from data_types import Field
+from database_manager.abstract import AbstractDatabaseManager
 
 
-class DatabaseManager:
+class DatabaseManager(AbstractDatabaseManager):
     def __init__(
         self, host: str, port: int, username: str, password: str | None
     ) -> None:
+        super().__init__(host, port, username, password)
         self.host = host
         self.port = port
         self.username = username
