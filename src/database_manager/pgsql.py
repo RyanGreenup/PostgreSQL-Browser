@@ -3,6 +3,8 @@ import json
 import io
 from sqlalchemy import create_engine, MetaData
 import traceback
+import polars as pl
+from pathlib import Path
 from warning_types import (
     DatabaseWarning,
     ConnectionWarning,
@@ -364,6 +366,55 @@ class DatabaseManager(AbstractDatabaseManager):
         }
         return tables_and_fields
 
+    def export_table_to_parquet(self, dbname: str, table_name: str, path: Path) -> bool:
+        if not self.connect(dbname):
+            issue_warning("Unable to connect to the database", ConnectionWarning)
+            return False
+
+        try:
+            # Create SQLAlchemy engine
+            engine = create_engine(self.get_connection_url())
+
+            # Read the table into a Polars DataFrame
+            query = f"SELECT * FROM {table_name}"
+            df = pl.read_database(query, engine)
+
+            # Write the Polars DataFrame to Parquet file
+            df.write_parquet(path)
+
+            return True
+        except Exception as e:
+            issue_warning(f"Error exporting table to Parquet: {e}", QueryWarning)
+            return False
+
+    def import_table_as_parquet(self, dbname: str, table_name: str, path: Path) -> bool:
+        if not self.connect(dbname):
+            issue_warning("Unable to connect to the database", ConnectionWarning)
+            return False
+
+        try:
+            # Read Parquet file into a Polars DataFrame
+            df = pl.read_parquet(path)
+
+            # Create SQLAlchemy engine
+            engine = create_engine(self.get_connection_url())
+
+            # Write DataFrame to SQL table
+            with engine.connect() as connection:
+                # Drop the table if it exists
+                connection.execute(f"DROP TABLE IF EXISTS {table_name}")
+                
+                # Create the table
+                create_table_query = f"CREATE TABLE {table_name} ({', '.join([f'{col} {dtype}' for col, dtype in zip(df.columns, df.dtypes)])})"
+                connection.execute(create_table_query)
+                
+                # Insert data
+                df.write_database(table_name, connection)
+
+            return True
+        except Exception as e:
+            issue_warning(f"Error importing Parquet file to table: {e}", QueryWarning)
+            return False
 
 # Footnotes
 # [fn cur_err]
