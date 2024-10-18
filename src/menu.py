@@ -99,6 +99,11 @@ class MenuManager:
                     callback=self.central_widget._export_table_to_parquet,
                     icon=StandardIcon.SAVE,
                 ),
+                "&Import Table from Parquet": self._action_builder(
+                    "Ctrl+Shift+I",
+                    callback=self.central_widget.import_table_from_parquet,
+                    icon=StandardIcon.OPEN,
+                ),
             },
             "&Help": {"&About": self._action_builder("Ctrl+,")},
         }
