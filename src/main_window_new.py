@@ -266,7 +266,7 @@ class CustomCentralWidget(QWidget):
     # ****** DB Tree
     def update_db_tree(self) -> None:
         connection_info = self.connection_widget.get_connection_info()
-        self.db_manager.update_connection(**connection_info)
+        self.db_manager.configure_connection(**connection_info)
         try:
             databases = self.db_manager.list_databases()
             tables_dict = {db: self.db_manager.list_tables(db) for db in databases}

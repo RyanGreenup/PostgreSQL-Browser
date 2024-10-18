@@ -8,11 +8,11 @@ class AbstractDatabaseManager(ABC):
         pass
 
     @abstractmethod
-    def get_url(self) -> str:
+    def get_connection_url(self) -> str:
         pass
 
     @abstractmethod
-    def update_connection(self, host: str, port: int, username: str, password: str) -> None:
+    def configure_connection(self, host: str, port: int, username: str, password: str) -> None:
         pass
 
     @abstractmethod

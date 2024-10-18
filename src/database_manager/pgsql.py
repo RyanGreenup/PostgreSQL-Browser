@@ -29,11 +29,11 @@ class DatabaseManager(AbstractDatabaseManager):
         self.conn: Optional[PsycopgConnection] = None
         self.current_database: str | None = None
 
-    def get_url(self) -> str:
+    def get_connection_url(self) -> str:
         dbname = self.current_database
         return f"postgresql://{self.username}:{self.password}@{self.host}:{self.port}/{dbname}"
 
-    def update_connection(
+    def configure_connection(
         self, host: str, port: int, username: str, password: str
     ) -> None:
         self.host = host
@@ -61,7 +61,7 @@ class DatabaseManager(AbstractDatabaseManager):
             return False
 
     def dump_schema(self) -> str:
-        db_url = self.get_url()
+        db_url = self.get_connection_url()
         engine = create_engine(db_url)
         metadata = MetaData()
         metadata.reflect(engine)
