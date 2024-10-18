@@ -1,4 +1,3 @@
-from PyQt6.QtCore import pyqtSignal, pyqtSlot
 from PySide6.QtWidgets import QWidget, QLineEdit, QComboBox, QPushButton, QHBoxLayout, QVBoxLayout
 from database_manager import DatabaseManager
 from openai_query import OpenAIQueryManager
@@ -28,7 +27,7 @@ class LLMManager:
 
 # TODO to be LLMManager not search bar
 class AiSearchBar(QWidget):
-    search_requested = pyqtSignal(str, str)
+    # search_requested = pyqtSignal(str, str)
 
     def __init__(
         self,
@@ -69,24 +68,24 @@ class AiSearchBar(QWidget):
 
         layout.addLayout(row_layout)
 
-    @pyqtSlot()
-    def on_return_pressed(self):
-        query = self.search_bar.text()
-        model = self.model_combo.currentText()
-        self.search_requested.emit(query, model)
+    # @pyqtSlot()
+    # def on_return_pressed(self):
+    #     query = self.search_bar.text()
+    #     model = self.model_combo.currentText()
+    #     self.search_requested.emit(query, model)
 
-    @pyqtSlot()
-    def on_button_clicked(self):
-        query = self.search_bar.text()
-        model = self.model_combo.currentText()
-        self.search_requested.emit(query, model)
-
-    @pyqtSlot(str, str)
-    def on_search_request(self, query: str, model: str):
-        out = self.get_result(query, model)
-        if self.text_edit:
-            self.text_edit.setPlainText(out)
-        self.set_chat_history(PromptResponse(query, out))
+    # @pyqtSlot()
+    # def on_button_clicked(self):
+    #     query = self.search_bar.text()
+    #     model = self.model_combo.currentText()
+    #     self.search_requested.emit(query, model)
+    #
+    # @pyqtSlot(str, str)
+    # def on_search_request(self, query: str, model: str):
+    #     out = self.get_result(query, model)
+    #     if self.text_edit:
+    #         self.text_edit.setPlainText(out)
+    #     self.set_chat_history(PromptResponse(query, out))
 
     def list_models(self) -> list[str]:
         return self.open_ai_query_manager.get_available_models()

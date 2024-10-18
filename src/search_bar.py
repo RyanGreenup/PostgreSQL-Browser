@@ -1,4 +1,3 @@
-from PyQt6.QtCore import pyqtSignal
 from PySide6.QtWidgets import QApplication, QComboBox, QHBoxLayout, QLineEdit, QWidget
 from gui_components import TableView
 import sys
@@ -10,7 +9,7 @@ from data_types import DBItemType
 
 
 class SearchWidget(QWidget):
-    search_performed = pyqtSignal(str, list)  # New signal
+    # search_performed = pyqtSignal(str, list)  # New signal
 
     def __init__(
         self, db_manager: DatabaseManager, db_tree: DBTablesTree, table_view: TableView
