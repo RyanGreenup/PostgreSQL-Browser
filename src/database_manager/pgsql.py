@@ -1,6 +1,8 @@
 import psycopg2
 import io
-from sqlalchemy import create_engine, Table, Column, MetaData, String, Integer, text
+import json
+import os
+from sqlalchemy import create_engine, Table, Column, MetaData, String, Integer, text, inspect
 from sqlalchemy.exc import IntegrityError, ProgrammingError
 import traceback
 import polars as pl
@@ -443,6 +445,79 @@ class DatabaseManager(AbstractDatabaseManager):
             return False
         except Exception as e:
             issue_warning(f"Error importing Parquet file to table: {e}", QueryWarning)
+            return False
+
+    def export_database_to_parquet(self, dbname: str, directory: Path) -> bool:
+        if not self.connect(dbname):
+            issue_warning("Unable to connect to the database", ConnectionWarning)
+            return False
+
+        try:
+            engine = create_engine(self.get_connection_url())
+            inspector = inspect(engine)
+            
+            # Create the directory if it doesn't exist
+            os.makedirs(directory, exist_ok=True)
+            
+            metadata = {}
+            
+            for table_name in inspector.get_table_names():
+                # Export table to Parquet
+                query = f'SELECT * FROM "{table_name}"'
+                df = pl.read_database(query, engine)
+                parquet_path = directory / f"{table_name}.parquet"
+                df.write_parquet(parquet_path)
+                
+                # Store metadata
+                columns = inspector.get_columns(table_name)
+                metadata[table_name] = [
+                    {"name": col["name"], "type": str(col["type"])}
+                    for col in columns
+                ]
+            
+            # Write metadata to JSON file
+            with open(directory / "metadata.json", "w") as f:
+                json.dump(metadata, f, indent=2)
+            
+            return True
+        except Exception as e:
+            issue_warning(f"Error exporting database to Parquet: {e}", QueryWarning)
+            return False
+
+    def import_database_from_parquet(self, dbname: str, directory: Path) -> bool:
+        if not self.connect(dbname):
+            issue_warning("Unable to connect to the database", ConnectionWarning)
+            return False
+
+        try:
+            engine = create_engine(self.get_connection_url())
+            metadata = MetaData()
+
+            # Read metadata from JSON file
+            with open(directory / "metadata.json", "r") as f:
+                table_metadata = json.load(f)
+
+            for table_name, columns in table_metadata.items():
+                # Read Parquet file
+                parquet_path = directory / f"{table_name}.parquet"
+                df = pl.read_parquet(parquet_path)
+
+                # Create table
+                table_columns = []
+                for col in columns:
+                    col_type = String if "char" in col["type"].lower() else Integer
+                    table_columns.append(Column(col["name"], col_type))
+
+                table = Table(table_name, metadata, *table_columns)
+                table.create(engine, checkfirst=True)
+
+                # Insert data
+                with engine.connect() as connection:
+                    df.write_database(table_name, connection)
+
+            return True
+        except Exception as e:
+            issue_warning(f"Error importing database from Parquet: {e}", QueryWarning)
             return False
 
 

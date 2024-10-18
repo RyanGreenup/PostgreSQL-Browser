@@ -78,3 +78,11 @@ class AbstractDatabaseManager(ABC):
 
     def import_table_as_parquet(self, dbname: str, table_name: str, path: Path) -> bool:
         raise NotImplementedError("This method is not implemented")
+
+    @abstractmethod
+    def export_database_to_parquet(self, dbname: str, directory: Path) -> bool:
+        pass
+
+    @abstractmethod
+    def import_database_from_parquet(self, dbname: str, directory: Path) -> bool:
+        pass
