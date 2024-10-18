@@ -78,47 +78,47 @@ class DatabaseManager:
     def get_current_schema(self) -> str | None:
         return self.dump_schema()
 
-    def get_current_schema_as_json(self) -> str | None:
-        """
-        Returns the current schema of the connected database.
-        By default, PostgreSQL uses 'public' as the default schema.
-        """
-        if not self.conn:
-            issue_warning("No database connection available.", ConnectionWarning)
-            return None
-
-        try:
-            with self.conn.cursor() as cursor:
-                # Retrieve table names from the public schema
-                cursor.execute("""
-                    SELECT table_name
-                    FROM information_schema.tables
-                    WHERE table_schema = 'public'
-                    ORDER BY table_name;
-                """)
-                tables = cursor.fetchall()
-
-                # Iterate over each table to get its columns and types
-                schema = {}
-                for table in tables:
-                    table_name = table[0]
-                    cursor.execute(
-                        """
-                        SELECT column_name, data_type
-                        FROM information_schema.columns
-                        WHERE table_name = %s
-                        ORDER BY ordinal_position;
-                    """,
-                        (table_name,),
-                    )
-                    columns = cursor.fetchall()
-
-                    schema[table_name] = columns
-
-                return json.dumps(schema, indent=4)
-        except psycopg2.Error as e:
-            issue_warning(f"Error fetching current schema: {e}", QueryWarning)
-            return None
+    # def get_current_schema_as_json(self) -> str | None:
+    #     """
+    #     Returns the current schema of the connected database.
+    #     By default, PostgreSQL uses 'public' as the default schema.
+    #     """
+    #     if not self.conn:
+    #         issue_warning("No database connection available.", ConnectionWarning)
+    #         return None
+    #
+    #     try:
+    #         with self.conn.cursor() as cursor:
+    #             # Retrieve table names from the public schema
+    #             cursor.execute("""
+    #                 SELECT table_name
+    #                 FROM information_schema.tables
+    #                 WHERE table_schema = 'public'
+    #                 ORDER BY table_name;
+    #             """)
+    #             tables = cursor.fetchall()
+    #
+    #             # Iterate over each table to get its columns and types
+    #             schema = {}
+    #             for table in tables:
+    #                 table_name = table[0]
+    #                 cursor.execute(
+    #                     """
+    #                     SELECT column_name, data_type
+    #                     FROM information_schema.columns
+    #                     WHERE table_name = %s
+    #                     ORDER BY ordinal_position;
+    #                 """,
+    #                     (table_name,),
+    #                 )
+    #                 columns = cursor.fetchall()
+    #
+    #                 schema[table_name] = columns
+    #
+    #             return json.dumps(schema, indent=4)
+    #     except psycopg2.Error as e:
+    #         issue_warning(f"Error fetching current schema: {e}", QueryWarning)
+    #         return None
 
     def list_databases(self) -> List[str]:
         if not self.connect():
@@ -273,26 +273,26 @@ class DatabaseManager:
             issue_warning("Unable to get database connection", ConnectionWarning)
             return "Error: No database connection available."
 
-    def get_tables(self, dbname: str) -> List[str]:
-        """
-        Get a list of tables in the specified database
-        """
-        if not self.connect(dbname):
-            return []
-
-        if conn := self.conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    SELECT table_name
-                    FROM information_schema.tables
-                    WHERE table_schema = 'public'
-                """
-                )
-                return [row[0] for row in cur.fetchall()]
-        else:
-            issue_warning("Unable to get database connection", ConnectionWarning)
-            return []
+    # def get_tables(self, dbname: str) -> List[str]:
+    #     """
+    #     Get a list of tables in the specified database
+    #     """
+    #     if not self.connect(dbname):
+    #         return []
+    #
+    #     if conn := self.conn:
+    #         with conn.cursor() as cur:
+    #             cur.execute(
+    #                 """
+    #                 SELECT table_name
+    #                 FROM information_schema.tables
+    #                 WHERE table_schema = 'public'
+    #             """
+    #             )
+    #             return [row[0] for row in cur.fetchall()]
+    #     else:
+    #         issue_warning("Unable to get database connection", ConnectionWarning)
+    #         return []
 
     def get_tables_and_fields_and_types(self, dbname: str) -> Dict[str, List[Field]]:
         if self.connect(dbname):
