@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
     QTextEdit,
     QVBoxLayout,
     QWidget,
+    QInputDialog,
 )
 from pathlib import Path
 
@@ -198,6 +199,54 @@ class CustomCentralWidget(QWidget):
                     "Export Failed",
                     f"Failed to export table '{current_table}'",
                 )
+
+    def import_table_from_parquet(self):
+        # Get the currently selected database
+        current_db = self.get_current_database()
+        
+        if not current_db:
+            issue_warning("Please select a database to import into.", UserError)
+            QMessageBox.warning(
+                self.main_window,
+                "Import Failed",
+                "Please select a database to import into.",
+            )
+            return
+
+        # Open a file dialog to choose the Parquet file
+        file_path, _ = QFileDialog.getOpenFileName(
+            self.main_window,
+            "Open Parquet File",
+            "",
+            "Parquet Files (*.parquet)"
+        )
+
+        if file_path:
+            # Ask for the new table name
+            table_name, ok = QInputDialog.getText(
+                self.main_window, 
+                "Import Table", 
+                "Enter the name for the new table:"
+            )
+
+            if ok and table_name:
+                # Call the import method
+                success = self.db_manager.import_table_as_parquet(current_db, table_name, Path(file_path))
+
+                if success:
+                    QMessageBox.information(
+                        self.main_window,
+                        "Import Successful",
+                        f"Table '{table_name}' imported successfully from {file_path}"
+                    )
+                    # Refresh the table list
+                    self.update_db_tree()
+                else:
+                    QMessageBox.warning(
+                        self.main_window,
+                        "Import Failed",
+                        f"Failed to import table '{table_name}' from {file_path}"
+                    )
 
     # ****** AI Search
     def on_ai_search(self) -> None:
