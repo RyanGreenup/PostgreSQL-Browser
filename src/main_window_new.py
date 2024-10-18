@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
     QInputDialog,
 )
 from pathlib import Path
+from warning_types import UserError
 
 # *** Local Imports
 from gui_components import DBTablesTree, TableView
