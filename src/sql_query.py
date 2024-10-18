@@ -16,7 +16,7 @@ from PySide6.QtCore import QUrl
 from PySide6.QtQuickWidgets import QQuickWidget
 
 from data_types import Database, Table
-from database_manager import DatabaseManager
+from database_manager.pgsql import DatabaseManager
 from gui_components import DBFieldsView
 from ai_search_bar import AiSearchBar
 from data_types import DBElement

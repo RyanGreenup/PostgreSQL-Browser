@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import QApplication, QComboBox, QHBoxLayout, QLineEdit, QWidget
 from gui_components import TableView
 import sys
-from database_manager import DatabaseManager
+from database_manager.pgsql import DatabaseManager
 from warning_types import issue_warning, DatabaseWarning
 from gui_components import DBTablesTree
 

@@ -31,7 +31,7 @@ from enum import Enum
 from gui_components import DBTablesTree, TableView
 from data_types import ConnectionConfig
 from connection_widget import ConnectionWidget
-from database_manager import DatabaseManager
+from database_manager.pgsql import DatabaseManager
 from warning_types import TreeWarning, issue_warning, OpenAIWarning
 from sql_query import DBTreeDisplay
 from data_types import Database, Table
@@ -355,6 +355,8 @@ class CustomCentralWidget(QWidget):
                 )
                 for row in rows[:5]:
                     self.output_text_edit.append(f"  - {row}")
+                # TODO Dump the schema, refactor pgsql `get_tables_and_fields_and_types`
+                # to also have a get_tables_and_fields_method
             else:
                 self.output_text_edit.append(f"Table {table_name} is empty.")
             self.status_bar.showMessage(f"Showing contents of table {table_name}")

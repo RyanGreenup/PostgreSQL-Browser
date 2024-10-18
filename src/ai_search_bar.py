@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import QWidget, QLineEdit, QComboBox, QPushButton, QHBoxLayout, QVBoxLayout
-from database_manager import DatabaseManager
+from database_manager.pgsql import DatabaseManager
 from openai_query import OpenAIQueryManager
 from dataclasses import dataclass
 

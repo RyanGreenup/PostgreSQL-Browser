@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QLineEdit
 from typing import Dict, Any
-from database_manager import DatabaseManager
+from database_manager.pgsql import DatabaseManager
 
 
 class ConnectionWidget(QWidget):
