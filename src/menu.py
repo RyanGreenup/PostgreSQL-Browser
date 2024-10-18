@@ -86,12 +86,10 @@ class MenuManager:
             "&Database": {
                 "&Execute Query": self._action_builder(
                     "Ctrl+E",
-                    # TODO this should be a method of the central widget
                     callback=lambda: self.central_widget.execute_custom_query(),
                 ),
                 "&AI Search": self._action_builder(
                     "Ctrl+R",
-                    # TODO this should be a method of the central widget
                     callback=lambda: self.central_widget.on_ai_search(),
                 ),
                 "&Export Table to Parquet": self._action_builder(
@@ -102,6 +100,16 @@ class MenuManager:
                 "&Import Table from Parquet": self._action_builder(
                     "Ctrl+Shift+I",
                     callback=self.central_widget.import_table_from_parquet,
+                    icon=StandardIcon.OPEN,
+                ),
+                "&Export Database to Parquet": self._action_builder(
+                    "Ctrl+Shift+X",
+                    callback=self.central_widget.export_database_to_parquet,
+                    icon=StandardIcon.SAVE,
+                ),
+                "&Import Database from Parquet": self._action_builder(
+                    "Ctrl+Shift+M",
+                    callback=self.central_widget.import_database_from_parquet,
                     icon=StandardIcon.OPEN,
                 ),
             },
