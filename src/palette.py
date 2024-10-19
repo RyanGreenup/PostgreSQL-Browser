@@ -1,19 +1,22 @@
 import os
 
-from PySide6.QtGui import QActionEvent
+from PySide6.QtGui import QAction, QActionEvent
 from pathlib import Path
 from fuzzywuzzy import fuzz
 from PySide6.QtWidgets import (
+    QApplication,
     QDialog,
     QLineEdit,
     QListWidget,
+    QMainWindow,
+    QPushButton,
     QVBoxLayout,
     QListWidgetItem,
+    QWidget,
 )
 from PySide6.QtCore import QUrl, Qt, QEvent
 
 import sys
-
 
 
 class Palette(QDialog):
@@ -204,3 +207,44 @@ class CommandPalette(Palette):
         if action:
             action.trigger()  # Execute the action
         self.close()
+
+
+def main():
+    app = QApplication(sys.argv)
+
+    actions = [
+        QAction("Action 1", app),
+        QAction("Action 2", app),
+        QAction("Action 3", app),
+        QAction("Action 4", app),
+        QAction("Action 5", app),
+    ]
+
+    keys = ["Ctrl+1", "Ctrl+2", "Ctrl+3", "Ctrl+4", "Ctrl+5"]
+    for action, key in zip(actions, keys):
+        action.setShortcut(key)
+        # Capturing the current `action` to avoid late binding always printing Action 5
+        action.triggered.connect(lambda checked, action=action: print(action.text()))
+
+    palette = CommandPalette(actions)
+
+    key = "Ctrl+P"
+    button = QPushButton("Show Palette" + f" ({key})")
+    button.clicked.connect(palette.open)
+    button.setShortcut(key)
+
+    layout = QVBoxLayout()
+    layout.addWidget(button)
+
+    central_widget = QWidget()
+    central_widget.setLayout(layout)
+
+    window = QMainWindow()
+    window.setCentralWidget(central_widget)
+    window.show()
+
+    sys.exit(app.exec())
+
+
+if __name__ == "__main__":
+    main()
