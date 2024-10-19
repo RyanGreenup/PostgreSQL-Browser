@@ -148,6 +148,7 @@ class CustomCentralWidget(QWidget):
         self.ai_search = QTextEdit()
         self.ai_search.setPlaceholderText("Enter AI Search Query")
         self.send_ai_search_button = QPushButton("Send AI Search")
+        self.send_ai_search_button.clicked.connect(self.on_ai_search)
         self.choose_model = self._create_model_selector()
 
         # Layout setup
