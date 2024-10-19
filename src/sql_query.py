@@ -54,10 +54,9 @@ class DBTreeDisplay(QTreeWidget):
                 for table_name, fields in self.db_manager.get_fields(
                     dbname, table_name
                 ).items():
-                    table_item = QTreeWidgetItem(root, [table_name])
+                    _ = table_name
                     for field in fields:
-                        _field_item = QTreeWidgetItem(table_item, [field])
-                    table_item.setExpanded(True)
+                        _field_item = QTreeWidgetItem(root, [field])
             case _:
                 assert False
 

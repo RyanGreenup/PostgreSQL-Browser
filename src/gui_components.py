@@ -212,6 +212,7 @@ class DBTablesTree(QTreeWidget):
                 )
 
 
+# TODO dead code?
 class DBFieldsView(QTreeWidget):
     def __init__(
         self, parent: QWidget | None = None, db_manager: DatabaseManager | None = None
