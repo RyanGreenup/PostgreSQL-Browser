@@ -181,19 +181,42 @@ class DatabaseManager(AbstractDatabaseManager):
         else:
             return False
 
-    def delete_database(self, dbname: str) -> bool:
+    def drop_database(self, dbname: str) -> bool:
         if not self.connect():
             return False
 
         if conn := self.conn:
             try:
+                # Close the connection to the database we want to drop
+                if self.current_database == dbname:
+                    self.conn.close()
+                    self.conn = None
+                    self.current_database = None
+
+                # Reconnect to the default 'postgres' database
+                self.connect()
+
+                # Set autocommit mode
                 conn.autocommit = True
+                
                 with conn.cursor() as cur:
+                    # Terminate all other connections to the database
+                    cur.execute(f"""
+                        SELECT pg_terminate_backend(pg_stat_activity.pid)
+                        FROM pg_stat_activity
+                        WHERE pg_stat_activity.datname = %s
+                        AND pid <> pg_backend_pid()
+                    """, (dbname,))
+                    
+                    # Drop the database
                     cur.execute(f'DROP DATABASE IF EXISTS "{dbname}"')
+                
                 return True
             except psycopg2.Error as e:
-                issue_warning(f"Error deleting database: {e}", DatabaseWarning)
+                issue_warning(f"Error dropping database: {e}", DatabaseWarning)
                 return False
+            finally:
+                conn.autocommit = False
         else:
             issue_warning("Unable to get database connection", ConnectionWarning)
             return False
