@@ -161,6 +161,11 @@ class DatabaseManager(AbstractDatabaseManager):
     # TODO delete_database uses try/catch but this uses if/else
     # Make the code consistent
     def create_database(self, dbname: str) -> bool:
+        print("---------------> b")
+        if dbname in self.list_databases():
+            # TODO make a popup
+            issue_warning("Database already exists, aborting", UserWarning)
+            return False
         if self.connect():
             try:
                 if conn := self.conn:
@@ -455,39 +460,61 @@ class DatabaseManager(AbstractDatabaseManager):
         try:
             engine = create_engine(self.get_connection_url())
             inspector = inspect(engine)
-            
+
             # Create the directory if it doesn't exist
             os.makedirs(directory, exist_ok=True)
-            
+
             metadata = {}
-            
+
             for table_name in inspector.get_table_names():
                 # Export table to Parquet
                 query = f'SELECT * FROM "{table_name}"'
                 df = pl.read_database(query, engine)
                 parquet_path = directory / f"{table_name}.parquet"
                 df.write_parquet(parquet_path)
-                
+
                 # Store metadata
                 columns = inspector.get_columns(table_name)
                 metadata[table_name] = [
                     {"name": col["name"], "type": str(col["type"])}
                     for col in columns
                 ]
-            
+
             # Write metadata to JSON file
             with open(directory / "metadata.json", "w") as f:
                 json.dump(metadata, f, indent=2)
-            
+
             return True
         except Exception as e:
             issue_warning(f"Error exporting database to Parquet: {e}", QueryWarning)
             return False
 
+    # TODO this method does not work, consider simply calling the table method above
     def import_database_from_parquet(self, dbname: str, directory: Path) -> bool:
+        # This expects:
+        # - The database to be selected in the tree
+        #     - Must have this db selected to check whether tables already exist for import to use above method
+        #         - TODO should I implement this with sql directly to reduce new code?
+        #    - Implies following expectations:
+        #        - the database to be created first
+        #        - The db_tree to be updated
+        # Create the database first (This will throw an error if it's already there)
+        # print("---------------> a")
+        # print(dbname)
+        # if not self.create_database(dbname):
+        #     return False
+
+        # TODO update the db_tree
+        # TODO Select the database in the tree
+        # OR check if
+        # This is confusing, because this manager looks at the currently open table
+        # It would have to be re-initialized first
+
+
         if not self.connect(dbname):
             issue_warning("Unable to connect to the database", ConnectionWarning)
             return False
+
 
         try:
             engine = create_engine(self.get_connection_url())
@@ -500,20 +527,21 @@ class DatabaseManager(AbstractDatabaseManager):
             for table_name, columns in table_metadata.items():
                 # Read Parquet file
                 parquet_path = directory / f"{table_name}.parquet"
-                df = pl.read_parquet(parquet_path)
-
-                # Create table
-                table_columns = []
-                for col in columns:
-                    col_type = String if "char" in col["type"].lower() else Integer
-                    table_columns.append(Column(col["name"], col_type))
-
-                table = Table(table_name, metadata, *table_columns)
-                table.create(engine, checkfirst=True)
-
-                # Insert data
-                with engine.connect() as connection:
-                    df.write_database(table_name, connection)
+                self.import_table_as_parquet(dbname, table_name, parquet_path)
+                # df = pl.read_parquet(parquet_path)
+                #
+                # # Create table
+                # table_columns = []
+                # for col in columns:
+                #     col_type = String if "char" in col["type"].lower() else Integer
+                #     table_columns.append(Column(col["name"], col_type))
+                #
+                # table = Table(table_name, metadata, *table_columns)
+                # table.create(engine, checkfirst=True)
+                #
+                # # Insert data
+                # with engine.connect() as connection:
+                #     df.write_database(table_name, connection)
 
             return True
         except Exception as e:
