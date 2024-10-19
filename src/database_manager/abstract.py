@@ -50,7 +50,7 @@ class AbstractDatabaseManager(ABC):
         pass
 
     @abstractmethod
-    def drop_table(self, dbname: str) -> bool:
+    def drop_table(self, dbname: str, table_name: str) -> bool:
         pass
 
     @abstractmethod
