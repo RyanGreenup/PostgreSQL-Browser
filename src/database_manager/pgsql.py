@@ -195,7 +195,7 @@ class DatabaseManager(AbstractDatabaseManager):
 
                     with conn.cursor() as cur:
                         # Terminate all other connections to the database
-                        cur.execute(f"""
+                        cur.execute("""
                             SELECT pg_terminate_backend(pg_stat_activity.pid)
                             FROM pg_stat_activity
                             WHERE pg_stat_activity.datname = %s
@@ -429,7 +429,16 @@ class DatabaseManager(AbstractDatabaseManager):
             return False
 
     # TODO when this is called, must rebuild the tree
-    def import_table_as_parquet(self, dbname: str, table_name: str, path: Path) -> bool:
+    def import_table_as_parquet(self, dbname: str, table_name: str, path: Path, check: bool = True) -> bool:
+        """
+        Import table from Parquet file into the database.
+
+        Args:
+            dbname: The name of the database to import the table into
+            table_name: The name of the table to create
+            path: The path to the Parquet file
+            check: Whether to check if the table already exists before importing
+        """
         if not self.connect(dbname):
             issue_warning("Unable to connect to the database", ConnectionWarning)
             return False
@@ -446,9 +455,12 @@ class DatabaseManager(AbstractDatabaseManager):
                 # Refresh metadata to reflect the current database schema
                 metadata.reflect(bind=engine)
 
-                if table_name in self.get_tables_and_fields(dbname):
-                    issue_warning("Table already exists, aborting.", UserWarning)
-                    return False
+                print(dbname)
+                if check:
+                    print("I should not have been hit")
+                    if table_name in self.get_tables_and_fields(dbname):
+                        issue_warning("Table already exists, aborting.", UserWarning)
+                        return False
 
                 # Convert Polars DataFrame to SQLAlchemy columns
                 columns = [
@@ -460,10 +472,13 @@ class DatabaseManager(AbstractDatabaseManager):
                 new_table = Table(table_name, metadata, *columns)
 
                 # Use SQLAlchemy's `create_all` method to handle table creation if it doesn't exist
-                metadata.create_all(engine, tables=[new_table])
+                metadata.create_all(engine, tables=[new_table], checkfirst=check)
 
                 # Insert data into the table
-                df.write_database(table_name, connection)
+                if_table_exists = 'fail'
+                if not check:
+                    if_table_exists = 'replace'
+                df.write_database(table_name, connection, if_table_exists=if_table_exists)
 
             return True
         except (IntegrityError, ProgrammingError) as e:
@@ -548,7 +563,7 @@ class DatabaseManager(AbstractDatabaseManager):
             for table_name, columns in table_metadata.items():
                 # Read Parquet file
                 parquet_path = directory / f"{table_name}.parquet"
-                self.import_table_as_parquet(dbname, table_name, parquet_path)
+                self.import_table_as_parquet(dbname, table_name, parquet_path, check=False)
                 # df = pl.read_parquet(parquet_path)
                 #
                 # # Create table

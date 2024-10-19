@@ -1,7 +1,5 @@
-import os
 
-from PySide6.QtGui import QAction, QActionEvent
-from pathlib import Path
+from PySide6.QtGui import QAction
 from fuzzywuzzy import fuzz
 from PySide6.QtWidgets import (
     QApplication,
@@ -14,7 +12,7 @@ from PySide6.QtWidgets import (
     QListWidgetItem,
     QWidget,
 )
-from PySide6.QtCore import QUrl, Qt, QEvent
+from PySide6.QtCore import Qt, QEvent
 from typing import List
 
 import sys

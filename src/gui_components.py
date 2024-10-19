@@ -4,7 +4,6 @@ from PySide6.QtCore import Qt
 from data_types import Field
 from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem, QTableView, QWidget, QMenu, QMessageBox, QInputDialog, QLineEdit
 from PySide6.QtGui import QStandardItemModel, QStandardItem, QAction
-from PySide6.QtCore import Qt
 from database_manager.pgsql import DatabaseManager
 
 from data_types import DBItemType
