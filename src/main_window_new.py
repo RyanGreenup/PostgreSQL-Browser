@@ -326,7 +326,6 @@ class CustomCentralWidget(QWidget):
                         f"Failed to import database '{db_name}' from {directory}",
                     )
 
-
     # ****** AI Search
     def on_ai_search(self) -> None:
         print("---")
