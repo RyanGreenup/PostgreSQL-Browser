@@ -513,7 +513,7 @@ class CustomCentralWidget(QWidget):
     # ****** Trees
 
     def _create_tree_view(self):
-        tree_view = DBTablesTree()
+        tree_view = DBTablesTree(db_manager=self.db_manager)
         return tree_view
 
     def _create_fields_tree_view(self):

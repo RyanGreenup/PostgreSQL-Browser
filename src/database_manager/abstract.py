@@ -50,6 +50,10 @@ class AbstractDatabaseManager(ABC):
         pass
 
     @abstractmethod
+    def drop_table(self, dbname: str) -> bool:
+        pass
+
+    @abstractmethod
     def get_table_contents(
         self, dbname: str, table_name: str, limit: int = 1000
     ) -> Tuple[List[str], List[List[Any]], bool]:

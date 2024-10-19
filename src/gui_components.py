@@ -2,17 +2,22 @@ from typing import List, Dict, Tuple, Any
 
 from PySide6.QtCore import Qt
 from data_types import Field
-from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem, QTableView, QWidget
-from PySide6.QtGui import QStandardItemModel, QStandardItem
+from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem, QTableView, QWidget, QMenu, QMessageBox
+from PySide6.QtGui import QStandardItemModel, QStandardItem, QAction
 from database_manager.pgsql import DatabaseManager
 
 from data_types import DBItemType
 
 
 class DBTablesTree(QTreeWidget):
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(self, parent: QWidget | None = None, db_manager: DatabaseManager | None = None) -> None:
         super().__init__(parent)
         self.setHeaderLabels(["Databases and Tables"])
+        self.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.customContextMenuRequested.connect(self.show_context_menu)
+        self.db_manager = db_manager
+        if self.db_manager is None:
+            raise ValueError("DatabaseManager must be provided to DBTablesTree")
 
     def populate(
         self, databases: List[str], tables_dict: Dict[str, List[Tuple[str, str]]]
@@ -97,6 +102,105 @@ class DBTablesTree(QTreeWidget):
                 return current_item.text(0)
             case DBItemType.TABLE:
                 return current_item.parent().text(0)
+
+    def show_context_menu(self, position):
+        item = self.itemAt(position)
+        if not item:
+            return
+
+        menu = QMenu()
+        item_type = self._get_db_item_type(item)
+
+        if item_type == DBItemType.DATABASE:
+            delete_db_action = QAction("Delete Database", self)
+            delete_db_action.triggered.connect(lambda: self.delete_database(item))
+            menu.addAction(delete_db_action)
+
+        menu.addSeparator()
+
+        if item_type == DBItemType.TABLE:
+            delete_table_action = QAction("Delete Table", self)
+            delete_table_action.triggered.connect(lambda: self.delete_table(item))
+            menu.addAction(delete_table_action)
+
+        if menu.actions():
+            menu.exec_(self.viewport().mapToGlobal(position))
+
+    def delete_database(self, item):
+        db_name = item.text(0)
+        reply = QMessageBox.question(self, 'Delete Database',
+                                     f"Are you sure you want to delete the database '{db_name}'?",
+                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            try:
+                if self.db_manager.delete_database(db_name):
+                    self.takeTopLevelItem(self.indexOfTopLevelItem(item))
+                    QMessageBox.information(self, "Success", f"Database '{db_name}' has been deleted.")
+                else:
+                    QMessageBox.warning(self, "Error", f"Failed to delete database '{db_name}'.")
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"An unexpected error occurred while deleting database '{db_name}': {str(e)}")
+
+    def delete_table(self, item):
+        table_name = item.text(0).split()[0]
+        db_name = item.parent().text(0)
+        reply = QMessageBox.question(self, 'Delete Table',
+                                     f"Are you sure you want to delete the table '{table_name}' from database '{db_name}'?",
+                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            if self.db_manager.drop_table(db_name, table_name):
+                item.parent().removeChild(item)
+                QMessageBox.information(self, "Success", f"Table '{table_name}' has been deleted.")
+            else:
+                QMessageBox.warning(self, "Error", f"Failed to delete table '{table_name}'.")
+
+    def show_context_menu(self, position):
+        item = self.itemAt(position)
+        if not item:
+            return
+
+        menu = QMenu()
+        item_type = self._get_db_item_type(item)
+
+        if item_type == DBItemType.DATABASE:
+            delete_db_action = QAction("Delete Database", self)
+            delete_db_action.triggered.connect(lambda: self.delete_database(item))
+            menu.addAction(delete_db_action)
+
+        menu.addSeparator()
+
+        if item_type == DBItemType.TABLE:
+            delete_table_action = QAction("Delete Table", self)
+            delete_table_action.triggered.connect(lambda: self.delete_table(item))
+            menu.addAction(delete_table_action)
+
+        if menu.actions():
+            menu.exec_(self.viewport().mapToGlobal(position))
+
+    def delete_database(self, item):
+        db_name = item.text(0)
+        reply = QMessageBox.question(self, 'Delete Database',
+                                     f"Are you sure you want to delete the database '{db_name}'?",
+                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            if self.db_manager.delete_database(db_name):
+                self.takeTopLevelItem(self.indexOfTopLevelItem(item))
+                QMessageBox.information(self, "Success", f"Database '{db_name}' has been deleted.")
+            else:
+                QMessageBox.warning(self, "Error", f"Failed to delete database '{db_name}'.")
+
+    def delete_table(self, item):
+        table_name = item.text(0).split()[0]
+        db_name = item.parent().text(0)
+        reply = QMessageBox.question(self, 'Delete Table',
+                                     f"Are you sure you want to delete the table '{table_name}' from database '{db_name}'?",
+                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            if self.db_manager.drop_table(db_name, table_name):
+                item.parent().removeChild(item)
+                QMessageBox.information(self, "Success", f"Table '{table_name}' has been deleted.")
+            else:
+                QMessageBox.warning(self, "Error", f"Failed to delete table '{table_name}'.")
 
 
 class DBFieldsView(QTreeWidget):

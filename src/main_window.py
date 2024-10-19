@@ -102,7 +102,7 @@ class MainWindow(QMainWindow):
         main_splitter = QSplitter(Qt.Orientation.Horizontal)
 
         left_side = QSplitter(Qt.Orientation.Vertical)
-        self.db_tree = DBTablesTree()
+        self.db_tree = DBTablesTree(db_manager=self.db_manager)
         self.db_tree.itemSelectionChanged.connect(self.on_tree_selection_changed)
         left_side.addWidget(self.db_tree)
 
@@ -149,7 +149,12 @@ class MainWindow(QMainWindow):
 
     def update_db_tree(self) -> None:
         connection_info = self.connection_widget.get_connection_info()
-        self.db_manager.update_connection(**connection_info)
+        self.db_manager.configure_connection(**connection_info)
+        if not self.db_manager.connect():
+            self.output_text_edit.append("Failed to connect to the database.")
+            self.status_bar.showMessage("Connection failed")
+            return
+
         try:
             databases = self.db_manager.list_databases()
             tables_dict = {db: self.db_manager.list_tables(db) for db in databases}
