@@ -17,22 +17,6 @@ class PromptResponse:
     ai_response: str
 
 
-class LLMManager:
-    def __init__(
-        self,
-        db_manager: DatabaseManager,
-        text_edit,
-        openai_url: str = "http://localhost:11434",
-        parent=None,
-    ):
-        self.db_manager = db_manager
-        self.text_edit = text_edit
-        self.open_ai_query_manager = OpenAIQueryManager(url=openai_url)
-        self.chat_history = []
-        self.models = self.list_models()
-
-    def list_models(self) -> list[str]:
-        return self.open_ai_query_manager.get_available_models()
 
 
 # TODO to be LLMManager not search bar
@@ -66,7 +50,7 @@ class AiSearchBar(QWidget):
         self.model_combo.addItems(self.models)
 
         # Create Search Button
-        self.search_button = QPushButton("AI Search", self)
+        # self.search_button = QPushButton("AI Search", self)  # TODO: [fn_dead_code_button]
         # self.search_button.clicked.connect(self.on_button_clicked)  # TODO: [fn_dead_code_button]
 
 
@@ -131,4 +115,5 @@ class AiSearchBar(QWidget):
 # TODO: [fn_dead_code_button]
 # This button was removed in favour of keybindings
 # Also, would need to be added in main_window to have access to the editors and AIHandler etc.
+# Simpler to just use keybindings, palette or menu items
 
