@@ -131,42 +131,6 @@ class DBTablesTree(QTreeWidget):
         if menu.actions():
             menu.exec_(self.viewport().mapToGlobal(position))
 
-    def insert_table(self, item):
-        db_name = item.text(0)
-        table_name, ok = QInputDialog.getText(self, "Insert Table", "Enter table name:", QLineEdit.Normal)
-        if ok and table_name:
-            # Create a simple table with an ID column
-            query = f'CREATE TABLE "{table_name}" (id SERIAL PRIMARY KEY)'
-            result = self.db_manager.execute_custom_query(db_name, query)
-            if isinstance(result, str) and "successfully" in result.lower():
-                QMessageBox.information(self, "Success", f"Table '{table_name}' has been created.")
-                self.refresh_database(item)
-            else:
-                QMessageBox.warning(self, "Error", f"Failed to create table '{table_name}'.")
-
-    def refresh_database(self, item):
-        db_name = item.text(0)
-        tables = self.db_manager.list_tables(db_name)
-        item.takeChildren()  # Remove existing children
-        for table, table_type in tables:
-            tab_item = QTreeWidgetItem(item, [f"{table} ({table_type})"])
-            self._set_db_item_type(tab_item, DBItemType.TABLE)
-        self.expandItem(item)
-
-    def delete_database(self, item):
-        db_name = item.text(0)
-        reply = QMessageBox.question(self, 'Delete Database',
-                                     f"Are you sure you want to delete the database '{db_name}'?",
-                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-        if reply == QMessageBox.Yes:
-            try:
-                if self.db_manager.delete_database(db_name):
-                    self.takeTopLevelItem(self.indexOfTopLevelItem(item))
-                    QMessageBox.information(self, "Success", f"Database '{db_name}' has been deleted.")
-                else:
-                    QMessageBox.warning(self, "Error", f"Failed to delete database '{db_name}'.")
-            except Exception as e:
-                QMessageBox.critical(self, "Error", f"An unexpected error occurred while deleting database '{db_name}': {str(e)}")
 
     def delete_table(self, item):
         table_name = item.text(0).split()[0]
