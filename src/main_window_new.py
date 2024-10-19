@@ -265,6 +265,13 @@ class CustomCentralWidget(QWidget):
         directory = QFileDialog.getExistingDirectory(self.main_window, "Select Directory to Import From")
         if directory:
             db_name, ok = QInputDialog.getText(self.main_window, "Import Database", "Enter the name for the new database:")
+            # Create the database
+            self.db_manager.create_database(db_name)
+            # Change database to the selected database
+            self.update_db_tree()
+            # Set the tree to dbname
+            self.db_tree.setCurrentItem(self.db_tree.findItems(db_name, Qt.MatchFlag.MatchExactly)[0])
+            self.on_different_db_selected(Database(name=db_name))
             if ok and db_name:
                 success = self.db_manager.import_database_from_parquet(db_name, Path(directory))
                 if success:

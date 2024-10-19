@@ -1,5 +1,7 @@
 from collections.abc import Callable
 from typing import Optional
+from utils import flatten_dict
+from palette import CommandPalette
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QMainWindow,
@@ -32,6 +34,17 @@ class MenuManager:
     def build(self):
         self.setup_menus()
         self._create_toolbar()
+
+    def _set_action_labels_as_key(self, menu_desc):
+        for key, value in menu_desc.items():
+            # Recursion
+            if isinstance(value, dict):
+                sub_dict = value
+                self._set_action_labels_as_key(sub_dict)  # Recurse into the dict
+            # Action
+            elif isinstance(value, QAction):
+                # Set the label of the action and add it to the menu
+                value.setText(key.strip("&"))  # Set the label to the key
 
     def _add_menus_recursive(self, menu, menu_desc):
         for key, value in menu_desc.items():
@@ -142,7 +155,22 @@ class MenuManager:
             icon=StandardIcon.COPY,
         )
 
+        # Set the labels of the actions to the keys
+        self._set_action_labels_as_key(self.menu_desc)
+        # Build the Command Palette
+        self.actions = flatten_dict(self.menu_desc)
+        self.command_palette = CommandPalette(self.actions)
+        self.menu_desc["&View"]["&Command Palette"] = self._action_builder(
+            "Ctrl+P", callback=self._show_palette, icon=StandardIcon.COMMAND_PALETTE
+        )
         self._add_menus_recursive(menu_bar, self.menu_desc)
+
+
+    def _show_palette(self) -> None:
+        self.command_palette.show()
+        # self.command_palette.raise_()
+        # self.command_palette.activateWindow()
+
 
     # Action Factory
     def _action_builder(
