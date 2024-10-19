@@ -5,7 +5,7 @@ description = "A GUI for Postgres Databases"
 authors = ["ryan <ryanxgreenup@gmail.com>"]
 license = "GPL"
 readme = "README.md"
-packages = [{include = "*", from="src"}]
+packages = [{include = "**/**", from="src"}]
 
 [tool.poetry.dependencies]
 python = ">=3.11,<3.13"
