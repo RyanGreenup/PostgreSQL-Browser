@@ -62,24 +62,19 @@ class SearchWidget(QWidget):
                         tables_and_fields = self.db_manager.get_tables_and_fields(db_name)
                         if selected_table in tables_and_fields:
                             fields = tables_and_fields[selected_table]
-                            print(f"Fields: {fields}")  # Debug print
                             self.field_combo_box.addItems(fields)
                             self.field_combo_box.setCurrentIndex(0)
                         else:
-                            print(
-                                f"Selected table {selected_table} not found in database {db_name}"
-                            )
+                            print(f"Selected table {selected_table} not found in database {db_name}")
                     else:
                         print("No database selected")
                 except Exception as e:
-                    issue_warning(
-                        f"Error getting table fields: {str(e)}", DatabaseWarning, e
-                    )
+                    issue_warning(f"Error getting table fields: {str(e)}", DatabaseWarning, e)
             else:
-                print("No table selected")  # Debug print
+                print("No table selected")
         else:
-            print("No table selected or item is not a table")  # Debug print
-        
+            print("No table selected or item is not a table")
+    
         self.field_combo_box.setEnabled(current_item_type == DBItemType.TABLE)
 
     def refresh(self):

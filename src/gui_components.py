@@ -68,11 +68,13 @@ class DBTablesTree(QTreeWidget):
     def _get_db_item_type(self, item: QTreeWidgetItem) -> DBItemType:
         return self._get_attribute(item, "type")
 
-    def get_current_item_type(self) -> DBItemType:
+    def get_current_item_type(self) -> DBItemType | None:
         """
         Get the type of the current item
         """
         current_item = self.currentItem()
+        if current_item is None:
+            return None
         return self._get_db_item_type(current_item)
 
     # TODO is this really needed? grep and vulture to pull it out
