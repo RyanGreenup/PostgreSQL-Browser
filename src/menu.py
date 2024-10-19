@@ -131,6 +131,13 @@ class MenuManager:
                     icon=StandardIcon.RANDOM_SAMPLE,
                     checked=True,
                 ),
+                # NOTE: Delete Database is in right click menu
+                "&Create Database": self._action_builder(
+                    "Ctrl+Shift+D",
+                    callback=self.central_widget.create_database,
+                    icon=StandardIcon.FILE,
+                    checked=True,
+                ),
             },
             "&Help": {"&About": self._action_builder("Ctrl+,")},
         }
