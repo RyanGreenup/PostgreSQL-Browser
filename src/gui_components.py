@@ -2,7 +2,7 @@ from typing import List, Dict, Tuple, Any
 
 from PySide6.QtCore import Qt
 from data_types import Field
-from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem, QTableView, QWidget, QMenu, QMessageBox
+from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem, QTableView, QWidget, QMenu, QMessageBox, QInputDialog, QLineEdit
 from PySide6.QtGui import QStandardItemModel, QStandardItem, QAction
 from database_manager.pgsql import DatabaseManager
 
@@ -116,6 +116,11 @@ class DBTablesTree(QTreeWidget):
             delete_db_action.triggered.connect(lambda: self.delete_database(item))
             menu.addAction(delete_db_action)
 
+            # Add "Insert Table" action for database items
+            insert_table_action = QAction("Insert Table", self)
+            insert_table_action.triggered.connect(lambda: self.insert_table(item))
+            menu.addAction(insert_table_action)
+
         menu.addSeparator()
 
         if item_type == DBItemType.TABLE:
@@ -125,6 +130,28 @@ class DBTablesTree(QTreeWidget):
 
         if menu.actions():
             menu.exec_(self.viewport().mapToGlobal(position))
+
+    def insert_table(self, item):
+        db_name = item.text(0)
+        table_name, ok = QInputDialog.getText(self, "Insert Table", "Enter table name:", QLineEdit.Normal)
+        if ok and table_name:
+            # Create a simple table with an ID column
+            query = f'CREATE TABLE "{table_name}" (id SERIAL PRIMARY KEY)'
+            result = self.db_manager.execute_custom_query(db_name, query)
+            if isinstance(result, str) and "successfully" in result.lower():
+                QMessageBox.information(self, "Success", f"Table '{table_name}' has been created.")
+                self.refresh_database(item)
+            else:
+                QMessageBox.warning(self, "Error", f"Failed to create table '{table_name}'.")
+
+    def refresh_database(self, item):
+        db_name = item.text(0)
+        tables = self.db_manager.list_tables(db_name)
+        item.takeChildren()  # Remove existing children
+        for table, table_type in tables:
+            tab_item = QTreeWidgetItem(item, [f"{table} ({table_type})"])
+            self._set_db_item_type(tab_item, DBItemType.TABLE)
+        self.expandItem(item)
 
     def delete_database(self, item):
         db_name = item.text(0)
@@ -154,6 +181,28 @@ class DBTablesTree(QTreeWidget):
             else:
                 QMessageBox.warning(self, "Error", f"Failed to delete table '{table_name}'.")
 
+    def insert_table(self, item):
+        db_name = item.text(0)
+        table_name, ok = QInputDialog.getText(self, "Insert Table", "Enter table name:", QLineEdit.Normal)
+        if ok and table_name:
+            # Create a simple table with an ID column
+            query = f'CREATE TABLE "{table_name}" (id SERIAL PRIMARY KEY)'
+            result = self.db_manager.execute_custom_query(db_name, query)
+            if isinstance(result, str) and "successfully" in result.lower():
+                QMessageBox.information(self, "Success", f"Table '{table_name}' has been created.")
+                self.refresh_database(item)
+            else:
+                QMessageBox.warning(self, "Error", f"Failed to create table '{table_name}'.")
+
+    def refresh_database(self, item):
+        db_name = item.text(0)
+        tables = self.db_manager.list_tables(db_name)
+        item.takeChildren()  # Remove existing children
+        for table, table_type in tables:
+            tab_item = QTreeWidgetItem(item, [f"{table} ({table_type})"])
+            self._set_db_item_type(tab_item, DBItemType.TABLE)
+        self.expandItem(item)
+
     def show_context_menu(self, position):
         item = self.itemAt(position)
         if not item:
@@ -167,9 +216,12 @@ class DBTablesTree(QTreeWidget):
             delete_db_action.triggered.connect(lambda: self.delete_database(item))
             menu.addAction(delete_db_action)
 
-        menu.addSeparator()
+            # Add "Insert Table" action for database items
+            insert_table_action = QAction("Insert Table", self)
+            insert_table_action.triggered.connect(lambda: self.insert_table(item))
+            menu.addAction(insert_table_action)
 
-        if item_type == DBItemType.TABLE:
+        elif item_type == DBItemType.TABLE:
             delete_table_action = QAction("Delete Table", self)
             delete_table_action.triggered.connect(lambda: self.delete_table(item))
             menu.addAction(delete_table_action)

@@ -283,6 +283,7 @@ class DatabaseManager(AbstractDatabaseManager):
     ) -> Union[str, Tuple[List[str], List[Tuple[Any, ...]]]]:
         if not self.connect(dbname):
             issue_warning("Unable to get database connection", ConnectionWarning)
+            return "Error: Unable to connect to the database."
 
         if conn := self.conn:
             try:
