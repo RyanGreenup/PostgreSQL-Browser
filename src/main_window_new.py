@@ -124,6 +124,7 @@ class CustomCentralWidget(QWidget):
         self.on_different_db_selected(Database(name=self.db_tree.get_first_db()))
         # Take random samples from the database
         self.random_sample: bool = False
+        self.limit: int = conf.limit  # Default limit for table content
 
     def _initialize_ui(self):
         self._setup_widgets()
@@ -471,7 +472,7 @@ class CustomCentralWidget(QWidget):
     # ****** Table
     def show_table_contents(self, dbname: str, table_name: str) -> None:
         col_names, rows, success = self.db_manager.get_table_contents(
-            dbname, table_name, random=self.random_sample
+            dbname, table_name, limit=self.limit, random=self.random_sample
         )
         if success:
             self.table_view.update_content(col_names, rows)

@@ -54,6 +54,7 @@ class ConnectionConfig:
     username: str
     password: Optional[str] = None
     openai_url: str = "http://localhost:11434"
+    limit: int = 1000
 
 
 @dataclass

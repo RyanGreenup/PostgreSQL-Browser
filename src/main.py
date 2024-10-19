@@ -21,9 +21,10 @@ def postgres(
         None, help="Database password", prompt=True, hide_input=True
     ),
     openai_url: str = typer.Option("http://localhost:11434", help="OpenAI API URL"),
+    limit: int = typer.Option(1000, help="Limit of rows to display"),
 ) -> None:
     qt_app = QApplication(sys.argv)
-    conf = ConnectionConfig(host, port, username, password, openai_url)
+    conf = ConnectionConfig(host, port, username, password, openai_url, limit)
     main_window = MainWindow(conf)
     main_window.show()
     sys.exit(qt_app.exec())
