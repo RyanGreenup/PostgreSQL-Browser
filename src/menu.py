@@ -125,6 +125,12 @@ class MenuManager:
                     callback=self.central_widget.import_database_from_parquet,
                     icon=StandardIcon.OPEN,
                 ),
+                "&Random Sample": self._action_builder(
+                    "Ctrl+Shift+R",
+                    callback=self.central_widget._toggle_random_sample,
+                    icon=StandardIcon.RANDOM_SAMPLE,
+                    checked=True,
+                ),
             },
             "&Help": {"&About": self._action_builder("Ctrl+,")},
         }

@@ -122,6 +122,8 @@ class CustomCentralWidget(QWidget):
         self._initialize_ui()
         # Get first db_tree_item
         self.on_different_db_selected(Database(name=self.db_tree.get_first_db()))
+        # Take random samples from the database
+        self.random_sample: bool = False
 
     def _initialize_ui(self):
         self._setup_widgets()
@@ -155,6 +157,10 @@ class CustomCentralWidget(QWidget):
         layout = QVBoxLayout()
         layout.addWidget(main_layout)
         self.setLayout(layout)
+
+    # ***** Switches
+    def _toggle_random_sample(self):
+        self.random_sample = not self.random_sample
 
     # ***** Database
     # ****** Export and Import
@@ -465,7 +471,7 @@ class CustomCentralWidget(QWidget):
     # ****** Table
     def show_table_contents(self, dbname: str, table_name: str) -> None:
         col_names, rows, success = self.db_manager.get_table_contents(
-            dbname, table_name
+            dbname, table_name, random=self.random_sample
         )
         if success:
             self.table_view.update_content(col_names, rows)

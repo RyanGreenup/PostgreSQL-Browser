@@ -233,7 +233,7 @@ class DatabaseManager(AbstractDatabaseManager):
             return False
 
     def get_table_contents(
-        self, dbname: str, table_name: str, limit: int = 1000
+        self, dbname: str, table_name: str, limit: int = 1000, random: bool = False
     ) -> Tuple[List[str], List[List[Any]], bool]:
         if not self.connect(dbname):
             return [], [], False
@@ -264,7 +264,13 @@ class DatabaseManager(AbstractDatabaseManager):
                         return empty_val
 
                     # Get table contents
-                    cur.execute(f'SELECT * FROM "{table_name}" LIMIT %s', (limit,))
+                    if random:
+                        cur.execute(
+                            f'SELECT * FROM "{table_name}" ORDER BY RANDOM() LIMIT %s',
+                            (limit,),
+                        )
+                    else:
+                        cur.execute(f'SELECT * FROM "{table_name}" LIMIT %s', (limit,))
                     rows = cur.fetchall()
                     # Make rows a list to conform to return type [fn_1]
                     rows = [list(row) for row in rows]

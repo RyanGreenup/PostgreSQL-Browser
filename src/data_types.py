@@ -84,3 +84,4 @@ class StandardIcon(Enum):
     PASTE = QStyle.StandardPixmap.SP_DriveHDIcon
     DARK_MODE = QStyle.StandardPixmap.SP_DialogApplyButton
     COMMAND_PALETTE = QStyle.StandardPixmap.SP_DialogHelpButton
+    RANDOM_SAMPLE = QStyle.StandardPixmap.SP_DialogYesButton
