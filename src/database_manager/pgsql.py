@@ -571,6 +571,24 @@ class DatabaseManager(AbstractDatabaseManager):
             issue_warning(f"Error importing database from Parquet: {e}", QueryWarning)
             return False
 
+    def drop_table(self, dbname: str, table_name: str) -> bool:
+        if not self.connect(dbname):
+            return False
+
+        if conn := self.conn:
+            try:
+                with conn.cursor() as cur:
+                    # Drop the table
+                    cur.execute(f'DROP TABLE IF EXISTS "{table_name}"')
+                conn.commit()
+                return True
+            except psycopg2.Error as e:
+                conn.rollback()
+                issue_warning(f"Error dropping table: {e}", TableWarning)
+                return False
+        else:
+            issue_warning("Unable to get database connection", ConnectionWarning)
+            return False
 
 # Footnotes
 # [fn cur_err]
