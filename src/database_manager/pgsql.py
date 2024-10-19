@@ -527,25 +527,6 @@ class DatabaseManager(AbstractDatabaseManager):
 
     # TODO this method does not work, consider simply calling the table method above
     def import_database_from_parquet(self, dbname: str, directory: Path) -> bool:
-        # This expects:
-        # - The database to be selected in the tree
-        #     - Must have this db selected to check whether tables already exist for import to use above method
-        #         - TODO should I implement this with sql directly to reduce new code?
-        #    - Implies following expectations:
-        #        - the database to be created first
-        #        - The db_tree to be updated
-        # Create the database first (This will throw an error if it's already there)
-        # print("---------------> a")
-        # print(dbname)
-        # if not self.create_database(dbname):
-        #     return False
-
-        # TODO update the db_tree
-        # TODO Select the database in the tree
-        # OR check if
-        # This is confusing, because this manager looks at the currently open table
-        # It would have to be re-initialized first
-
 
         if not self.connect(dbname):
             issue_warning("Unable to connect to the database", ConnectionWarning)
@@ -564,20 +545,6 @@ class DatabaseManager(AbstractDatabaseManager):
                 # Read Parquet file
                 parquet_path = directory / f"{table_name}.parquet"
                 self.import_table_as_parquet(dbname, table_name, parquet_path, check=False)
-                # df = pl.read_parquet(parquet_path)
-                #
-                # # Create table
-                # table_columns = []
-                # for col in columns:
-                #     col_type = String if "char" in col["type"].lower() else Integer
-                #     table_columns.append(Column(col["name"], col_type))
-                #
-                # table = Table(table_name, metadata, *table_columns)
-                # table.create(engine, checkfirst=True)
-                #
-                # # Insert data
-                # with engine.connect() as connection:
-                #     df.write_database(table_name, connection)
 
             return True
         except Exception as e:
