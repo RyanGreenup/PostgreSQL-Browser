@@ -2,7 +2,16 @@ import psycopg2
 import io
 import json
 import os
-from sqlalchemy import create_engine, Table, Column, MetaData, String, Integer, text, inspect
+from sqlalchemy import (
+    create_engine,
+    Table,
+    Column,
+    MetaData,
+    String,
+    Integer,
+    text,
+    inspect,
+)
 from sqlalchemy.exc import IntegrityError, ProgrammingError
 import traceback
 import polars as pl
@@ -184,8 +193,10 @@ class DatabaseManager(AbstractDatabaseManager):
     def delete_database(self, dbname: str) -> bool:
         try:
             # Always connect to the 'postgres' database before dropping another database
-            if not self.connect('postgres'):
-                issue_warning("Failed to connect to 'postgres' database", ConnectionWarning)
+            if not self.connect("postgres"):
+                issue_warning(
+                    "Failed to connect to 'postgres' database", ConnectionWarning
+                )
                 return False
 
             if conn := self.conn:
@@ -195,12 +206,15 @@ class DatabaseManager(AbstractDatabaseManager):
 
                     with conn.cursor() as cur:
                         # Terminate all other connections to the database
-                        cur.execute("""
+                        cur.execute(
+                            """
                             SELECT pg_terminate_backend(pg_stat_activity.pid)
                             FROM pg_stat_activity
                             WHERE pg_stat_activity.datname = %s
                             AND pid <> pg_backend_pid()
-                        """, (dbname,))
+                        """,
+                            (dbname,),
+                        )
 
                         # Drop the database
                         cur.execute(f'DROP DATABASE IF EXISTS "{dbname}"')
@@ -429,7 +443,9 @@ class DatabaseManager(AbstractDatabaseManager):
             return False
 
     # TODO when this is called, must rebuild the tree
-    def import_table_as_parquet(self, dbname: str, table_name: str, path: Path, check: bool = True) -> bool:
+    def import_table_as_parquet(
+        self, dbname: str, table_name: str, path: Path, check: bool = True
+    ) -> bool:
         """
         Import table from Parquet file into the database.
 
@@ -475,10 +491,12 @@ class DatabaseManager(AbstractDatabaseManager):
                 metadata.create_all(engine, tables=[new_table], checkfirst=check)
 
                 # Insert data into the table
-                if_table_exists = 'fail'
+                if_table_exists = "fail"
                 if not check:
-                    if_table_exists = 'replace'
-                df.write_database(table_name, connection, if_table_exists=if_table_exists)
+                    if_table_exists = "replace"
+                df.write_database(
+                    table_name, connection, if_table_exists=if_table_exists
+                )
 
             return True
         except (IntegrityError, ProgrammingError) as e:
@@ -512,8 +530,7 @@ class DatabaseManager(AbstractDatabaseManager):
                 # Store metadata
                 columns = inspector.get_columns(table_name)
                 metadata[table_name] = [
-                    {"name": col["name"], "type": str(col["type"])}
-                    for col in columns
+                    {"name": col["name"], "type": str(col["type"])} for col in columns
                 ]
 
             # Write metadata to JSON file
@@ -527,16 +544,11 @@ class DatabaseManager(AbstractDatabaseManager):
 
     # TODO this method does not work, consider simply calling the table method above
     def import_database_from_parquet(self, dbname: str, directory: Path) -> bool:
-
         if not self.connect(dbname):
             issue_warning("Unable to connect to the database", ConnectionWarning)
             return False
 
-
         try:
-            engine = create_engine(self.get_connection_url())
-            metadata = MetaData()
-
             # Read metadata from JSON file
             with open(directory / "metadata.json", "r") as f:
                 table_metadata = json.load(f)
@@ -544,7 +556,9 @@ class DatabaseManager(AbstractDatabaseManager):
             for table_name, columns in table_metadata.items():
                 # Read Parquet file
                 parquet_path = directory / f"{table_name}.parquet"
-                self.import_table_as_parquet(dbname, table_name, parquet_path, check=False)
+                self.import_table_as_parquet(
+                    dbname, table_name, parquet_path, check=False
+                )
 
             return True
         except Exception as e:
@@ -569,6 +583,7 @@ class DatabaseManager(AbstractDatabaseManager):
         else:
             issue_warning("Unable to get database connection", ConnectionWarning)
             return False
+
 
 # Footnotes
 # [fn cur_err]

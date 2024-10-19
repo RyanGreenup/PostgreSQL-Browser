@@ -2,7 +2,16 @@ from typing import List, Dict, Tuple, Any
 
 from PySide6.QtCore import Qt
 from data_types import Field
-from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem, QTableView, QWidget, QMenu, QMessageBox, QInputDialog, QLineEdit
+from PySide6.QtWidgets import (
+    QTreeWidget,
+    QTreeWidgetItem,
+    QTableView,
+    QWidget,
+    QMenu,
+    QMessageBox,
+    QInputDialog,
+    QLineEdit,
+)
 from PySide6.QtGui import QStandardItemModel, QStandardItem, QAction
 from database_manager.pgsql import DatabaseManager
 
@@ -10,7 +19,9 @@ from data_types import DBItemType
 
 
 class DBTablesTree(QTreeWidget):
-    def __init__(self, parent: QWidget | None = None, db_manager: DatabaseManager | None = None) -> None:
+    def __init__(
+        self, parent: QWidget | None = None, db_manager: DatabaseManager | None = None
+    ) -> None:
         super().__init__(parent)
         self.setHeaderLabels(["Databases and Tables"])
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
@@ -131,28 +142,42 @@ class DBTablesTree(QTreeWidget):
     def delete_table(self, item):
         table_name = item.text(0).split()[0]
         db_name = item.parent().text(0)
-        reply = QMessageBox.question(self, 'Delete Table',
-                                     f"Are you sure you want to delete the table '{table_name}' from database '{db_name}'?",
-                                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No)
+        reply = QMessageBox.question(
+            self,
+            "Delete Table",
+            f"Are you sure you want to delete the table '{table_name}' from database '{db_name}'?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
         if reply == QMessageBox.StandardButton.Yes:
             if self.db_manager and self.db_manager.drop_table(db_name, table_name):
                 item.parent().removeChild(item)
-                QMessageBox.information(self, "Success", f"Table '{table_name}' has been deleted.")
+                QMessageBox.information(
+                    self, "Success", f"Table '{table_name}' has been deleted."
+                )
             else:
-                QMessageBox.warning(self, "Error", f"Failed to delete table '{table_name}'.")
+                QMessageBox.warning(
+                    self, "Error", f"Failed to delete table '{table_name}'."
+                )
 
     def insert_table(self, item):
         db_name = item.text(0)
-        table_name, ok = QInputDialog.getText(self, "Insert Table", "Enter table name:", QLineEdit.EchoMode.Normal)
+        table_name, ok = QInputDialog.getText(
+            self, "Insert Table", "Enter table name:", QLineEdit.EchoMode.Normal
+        )
         if ok and table_name:
             query = f'CREATE TABLE "{table_name}" (id SERIAL PRIMARY KEY)'
             if self.db_manager:
                 result = self.db_manager.execute_custom_query(db_name, query)
                 if isinstance(result, str) and "successfully" in result.lower():
-                    QMessageBox.information(self, "Success", f"Table '{table_name}' has been created.")
+                    QMessageBox.information(
+                        self, "Success", f"Table '{table_name}' has been created."
+                    )
                     self.refresh_database(item)
                 else:
-                    QMessageBox.warning(self, "Error", f"Failed to create table '{table_name}'.")
+                    QMessageBox.warning(
+                        self, "Error", f"Failed to create table '{table_name}'."
+                    )
 
     def refresh_database(self, item):
         db_name = item.text(0)
@@ -166,15 +191,23 @@ class DBTablesTree(QTreeWidget):
 
     def delete_database(self, item):
         db_name = item.text(0)
-        reply = QMessageBox.question(self, 'Delete Database',
-                                     f"Are you sure you want to delete the database '{db_name}'?",
-                                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No)
+        reply = QMessageBox.question(
+            self,
+            "Delete Database",
+            f"Are you sure you want to delete the database '{db_name}'?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
         if reply == QMessageBox.StandardButton.Yes:
             if self.db_manager and self.db_manager.delete_database(db_name):
                 self.takeTopLevelItem(self.indexOfTopLevelItem(item))
-                QMessageBox.information(self, "Success", f"Database '{db_name}' has been deleted.")
+                QMessageBox.information(
+                    self, "Success", f"Database '{db_name}' has been deleted."
+                )
             else:
-                QMessageBox.warning(self, "Error", f"Failed to delete database '{db_name}'.")
+                QMessageBox.warning(
+                    self, "Error", f"Failed to delete database '{db_name}'."
+                )
 
 
 class DBFieldsView(QTreeWidget):

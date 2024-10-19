@@ -1,4 +1,3 @@
-
 from PySide6.QtGui import QAction
 from fuzzywuzzy import fuzz
 from PySide6.QtWidgets import (
@@ -272,8 +271,10 @@ def fzy_sort(values: list[str], displays: list[str], text: str) -> list[str] | N
     sorted_values = [value for value, _ in sorted_values]
     return sorted_values
 
+
 def fzy_dist(s1: str, s2: str) -> float:
     return fuzz.ratio(s1, s2)
+
 
 if __name__ == "__main__":
     main()

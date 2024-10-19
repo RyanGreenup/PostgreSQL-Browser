@@ -250,35 +250,67 @@ class CustomCentralWidget(QWidget):
     def export_database_to_parquet(self):
         current_db = self.get_current_database()
         if not current_db:
-            QMessageBox.warning(self.main_window, "Export Failed", "Please select a database to export.")
+            QMessageBox.warning(
+                self.main_window, "Export Failed", "Please select a database to export."
+            )
             return
 
-        directory = QFileDialog.getExistingDirectory(self.main_window, "Select Directory for Export")
+        directory = QFileDialog.getExistingDirectory(
+            self.main_window, "Select Directory for Export"
+        )
         if directory:
-            success = self.db_manager.export_database_to_parquet(current_db, Path(directory))
+            success = self.db_manager.export_database_to_parquet(
+                current_db, Path(directory)
+            )
             if success:
-                QMessageBox.information(self.main_window, "Export Successful", f"Database '{current_db}' exported successfully to {directory}")
+                QMessageBox.information(
+                    self.main_window,
+                    "Export Successful",
+                    f"Database '{current_db}' exported successfully to {directory}",
+                )
             else:
-                QMessageBox.warning(self.main_window, "Export Failed", f"Failed to export database '{current_db}'")
+                QMessageBox.warning(
+                    self.main_window,
+                    "Export Failed",
+                    f"Failed to export database '{current_db}'",
+                )
 
     def import_database_from_parquet(self):
-        directory = QFileDialog.getExistingDirectory(self.main_window, "Select Directory to Import From")
+        directory = QFileDialog.getExistingDirectory(
+            self.main_window, "Select Directory to Import From"
+        )
         if directory:
-            db_name, ok = QInputDialog.getText(self.main_window, "Import Database", "Enter the name for the new database:")
+            db_name, ok = QInputDialog.getText(
+                self.main_window,
+                "Import Database",
+                "Enter the name for the new database:",
+            )
             # Create the database
             self.db_manager.create_database(db_name)
             # Change database to the selected database
             self.update_db_tree()
             # Set the tree to dbname
-            self.db_tree.setCurrentItem(self.db_tree.findItems(db_name, Qt.MatchFlag.MatchExactly)[0])
+            self.db_tree.setCurrentItem(
+                self.db_tree.findItems(db_name, Qt.MatchFlag.MatchExactly)[0]
+            )
             self.on_different_db_selected(Database(name=db_name))
             if ok and db_name:
-                success = self.db_manager.import_database_from_parquet(db_name, Path(directory))
+                success = self.db_manager.import_database_from_parquet(
+                    db_name, Path(directory)
+                )
                 if success:
-                    QMessageBox.information(self.main_window, "Import Successful", f"Database '{db_name}' imported successfully from {directory}")
+                    QMessageBox.information(
+                        self.main_window,
+                        "Import Successful",
+                        f"Database '{db_name}' imported successfully from {directory}",
+                    )
                     self.update_db_tree()  # Refresh the database tree
                 else:
-                    QMessageBox.warning(self.main_window, "Import Failed", f"Failed to import database '{db_name}' from {directory}")
+                    QMessageBox.warning(
+                        self.main_window,
+                        "Import Failed",
+                        f"Failed to import database '{db_name}' from {directory}",
+                    )
 
     # ****** AI Search
     def on_ai_search(self) -> None:

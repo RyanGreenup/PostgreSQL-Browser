@@ -16,8 +16,6 @@ class PromptResponse:
     ai_response: str
 
 
-
-
 # TODO to be LLMManager not search bar
 class AiSearchBar(QWidget):
     # search_requested = pyqtSignal(str, str)
@@ -49,7 +47,6 @@ class AiSearchBar(QWidget):
         self.model_combo.addItems(self.models)
 
         # Create Search Button
-
 
         # Set layouts
         row_layout = QHBoxLayout()

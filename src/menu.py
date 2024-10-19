@@ -165,12 +165,10 @@ class MenuManager:
         )
         self._add_menus_recursive(menu_bar, self.menu_desc)
 
-
     def _show_palette(self) -> None:
         self.command_palette.show()
         # self.command_palette.raise_()
         # self.command_palette.activateWindow()
-
 
     # Action Factory
     def _action_builder(
