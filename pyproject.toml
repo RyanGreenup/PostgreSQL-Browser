@@ -5,7 +5,10 @@ description = "A GUI for Postgres Databases"
 authors = ["ryan <ryanxgreenup@gmail.com>"]
 license = "GPL"
 readme = "README.md"
-packages = [{include = "**/**", from="src"}]
+   packages = [
+       {include = "*", from="src"},
+       {include = "database_manager", from="src"},
+   ]
 
 [tool.poetry.dependencies]
 python = ">=3.11,<3.13"
@@ -17,6 +20,7 @@ sqlalchemy = "^2.0.36"
 requests = "^2.32.3"
 fuzzywuzzy = "^0.18.0"
 python-levenshtein = "^0.26.0"
+polars = "^1.9.0"
 
 [tool.poetry.group.dev.dependencies]
 pyright = "^1.1.384"
