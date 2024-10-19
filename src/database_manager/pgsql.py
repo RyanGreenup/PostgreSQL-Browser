@@ -549,17 +549,15 @@ class DatabaseManager(AbstractDatabaseManager):
             return False
 
         try:
-            # Read metadata from JSON file
-            with open(directory / "metadata.json", "r") as f:
-                table_metadata = json.load(f)
+            # List the directory
+            files = [f.absolute() for f in directory.glob("*.parquet")]
+            table_names = [f.stem for f in files]
 
-            for table_name, columns in table_metadata.items():
-                # Read Parquet file
-                parquet_path = directory / f"{table_name}.parquet"
+            for parquet_path, table_name in zip(files, table_names):
+                print(parquet_path)
                 self.import_table_as_parquet(
                     dbname, table_name, parquet_path, check=False
                 )
-
             return True
         except Exception as e:
             issue_warning(f"Error importing database from Parquet: {e}", QueryWarning)
