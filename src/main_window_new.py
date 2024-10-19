@@ -312,8 +312,9 @@ class CustomCentralWidget(QWidget):
     def get_current_database(self) -> str:
         return self.db_tree.get_current_database()
 
-    def get_current_table(self) -> str:
-        return self.db_tree.get_selected_table()
+    def get_current_table(self) -> str | None:
+        if table := self.db_tree.get_selected_table():
+            return table
 
     def execute_custom_query(self) -> None:
         """

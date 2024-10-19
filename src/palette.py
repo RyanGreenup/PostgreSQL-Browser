@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 from PySide6.QtCore import QUrl, Qt, QEvent
+from typing import List
 
 import sys
 
@@ -89,10 +90,11 @@ class Palette(QDialog):
 
     def _update_list_widget(self):
         self.list_widget.clear()
-        for item in self.filtered_items:
-            list_item = QListWidgetItem(self.get_display_text(item))
-            list_item.setData(Qt.ItemDataRole.UserRole, item)
-            self.list_widget.addItem(list_item)
+        if items := self.filtered_items:
+            for item in items:
+                list_item = QListWidgetItem(self.get_display_text(item))
+                list_item.setData(Qt.ItemDataRole.UserRole, item)
+                self.list_widget.addItem(list_item)
 
     def _filter_items(self, text, fuzzy=False):
         if fuzzy:
@@ -118,7 +120,19 @@ class Palette(QDialog):
         # To be overridden by subclasses if necessary
         return str(item)
 
-    def eventFilter(self, obj, event):
+    def eventFilter(self, arg__1, arg__2):
+        """
+        Capture key press events and handle them accordingly.
+
+        The arguments are the oject that triggered the event and the event object.
+        The names are kept generic for consistency with the original method signature.
+
+        Args:
+            arg__1 : (obj) The object that triggered the event
+            arg__2 : (event) The event object
+        """
+        obj = arg__1
+        event = arg__2
         if obj == self.search_bar and event.type() == QEvent.Type.KeyPress:
             direction_keys = DirectionKeys(event)
 
@@ -170,13 +184,13 @@ class DirectionKeys:
 
 
 class CommandPalette(Palette):
-    def __init__(self, actions):
+    def __init__(self, actions: List[QAction]):
         super().__init__(title="Command Palette")
-        self.actions = actions
+        self.action_list = actions
         # TODO do I want this populated at construction?
         # Will the commands change?
         self.populate_items()
-        print([a.text() for a in self.actions])
+        print([a.text() for a in self.action_list])
 
     def populate_items(self):
         # Set Monospace font
@@ -188,10 +202,10 @@ class CommandPalette(Palette):
         self.list_widget.setContentsMargins(10, 10, 10, 10)
 
         # Measure Alignment of shortcut and action
-        max_length = min(max(len(action.text()) for action in self.actions), 60)
+        max_length = min(max(len(action.text()) for action in self.action_list), 60)
 
         self.items.clear()
-        self.items = [(action, max_length) for action in self.actions]
+        self.items = [(action, max_length) for action in self.action_list]
         self.filtered_items = self.items.copy()
         self._update_list_widget()
 
@@ -245,6 +259,23 @@ def main():
 
     sys.exit(app.exec())
 
+
+def fzy_sort(values: list[str], displays: list[str], text: str) -> list[str] | None:
+    """
+    Sort a list of strings, given a term using Levenshtein distance.
+    """
+    if not values:
+        return None
+
+    def sort_func(x):
+        return fzy_dist(x[0], text)
+
+    sorted_values = sorted(zip(values, displays), key=sort_func, reverse=True)
+    sorted_values = [value for value, _ in sorted_values]
+    return sorted_values
+
+def fzy_dist(s1: str, s2: str) -> float:
+    return fuzz.ratio(s1, s2)
 
 if __name__ == "__main__":
     main()

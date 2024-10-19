@@ -135,7 +135,7 @@ class SQLQuery(QWidget):
         self.ai_search_root = self.ai_search_widget.rootObject()
 
         # Connect signals
-        self.ai_search_root.search.connect(self.ai_search_bar.on_search)
+        # self.ai_search_root.search.connect(self.ai_search_bar.on_search)  # TODO dead code
 
         # Populate models
         self.ai_search_root.setProperty("models", self.ai_search_bar.list_models())
@@ -157,7 +157,7 @@ class SQLQuery(QWidget):
     def on_database_changed(self, database: str) -> None:
         self.current_database = database
         self.update_db_tree_display(database)
-        self.query_edit.set_default_query(database)
+        # self.query_edit.set_default_query(database)  # TODO dead code
 
     def initUI(self) -> None:
         splitter = QSplitter()

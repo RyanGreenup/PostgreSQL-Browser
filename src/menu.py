@@ -92,7 +92,7 @@ class MenuManager:
                 "&Zoom In": self._action_builder("Ctrl++"),
                 "&Dark Mode": self._action_builder(
                     "Ctrl+D",
-                    callback=lambda: self.main_window.toggle_theme(),
+                    callback=lambda: self.main_window.toggle_theme(),  # type:ignore  # (Can't Import MainWindow as circular, adc is overkill)
                     icon=StandardIcon.DARK_MODE,
                 ),
             },

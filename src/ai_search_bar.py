@@ -60,7 +60,6 @@ class AiSearchBar(QWidget):
         # Create Search Bar Input
         self.search_bar = QLineEdit(self)
         self.search_bar.setPlaceholderText("Enter your AI search query...")
-        self.search_bar.returnPressed.connect(self.on_return_pressed)
 
         # Create ComboBox for Model Selection
         self.model_combo = QComboBox(self)
@@ -68,13 +67,14 @@ class AiSearchBar(QWidget):
 
         # Create Search Button
         self.search_button = QPushButton("AI Search", self)
-        self.search_button.clicked.connect(self.on_button_clicked)
+        # self.search_button.clicked.connect(self.on_button_clicked)  # TODO: [fn_dead_code_button]
+
 
         # Set layouts
         row_layout = QHBoxLayout()
         row_layout.addWidget(self.search_bar)
         row_layout.addWidget(self.model_combo)
-        row_layout.addWidget(self.search_button)
+        # row_layout.addWidget(self.search_button)  # TODO: [fn_dead_code_button]
 
         layout.addLayout(row_layout)
 
@@ -125,3 +125,10 @@ class AiSearchBar(QWidget):
 
     def set_focus(self):
         self.search_bar.setFocus()
+
+
+# Footnotes
+# TODO: [fn_dead_code_button]
+# This button was removed in favour of keybindings
+# Also, would need to be added in main_window to have access to the editors and AIHandler etc.
+

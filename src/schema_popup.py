@@ -1,5 +1,5 @@
-from PyQt6.QtWidgets import QDialog, QTextEdit, QVBoxLayout, QPushButton
-from PyQt6.QtGui import QColor, QTextCharFormat, QFont, QSyntaxHighlighter
+from PySide6.QtWidgets import QDialog, QTextEdit, QVBoxLayout, QPushButton
+from PySide6.QtGui import QColor, QTextCharFormat, QFont, QSyntaxHighlighter
 import pyperclip
 import json
 import re
