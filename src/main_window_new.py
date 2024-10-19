@@ -292,7 +292,7 @@ class CustomCentralWidget(QWidget):
         out = self.get_result(query, model)
         if self.ai_search:
             if out:
-                self.ai_search.setPlainText(out)
+                self.query_edit.setPlainText(out)
             else:
                 issue_warning("No result from AI", OpenAIWarning)
         # TODO add agent like chat history
