@@ -27,8 +27,9 @@ PGPASSWORD=postgres psql -h localhost -p 5432 -U postgres -f ~/Downloads/Chinook
 ```
 
 ```python
-pg_browser --host localhost --password postgres --username postgres --port 5432
+pg_browser postgres --host localhost --password postgres --username postgres --port 5432
 ```
+
 
 ## Motivation
 
