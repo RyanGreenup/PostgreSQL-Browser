@@ -22,6 +22,8 @@ cd PostgreSQL-Browser
 docker-compose up -d
 docker-compose logs -f
 # C-c
+curl https://github.com/lerocha/chinook-database/releases/download/v1.4.5/Chinook_PostgreSql.sql > Chinook_PostgreSql.sql
+PGPASSWORD=postgres psql -h localhost -p 5432 -U postgres -f ~/Downloads/Chinook_PostgreSql.sql
 ```
 
 ```python
